@@ -43,19 +43,24 @@ export class QuranCatalogRepository {
 
   async fetchSurahAyahsWithMeal(surahNumber: number, reciterId: string): Promise<{ ayahs: AyahItem[]; source: string }> {
     const reciter = this.getReciterById(reciterId);
-    const res = await fetch(`/api/quran/surah/${surahNumber}`);
-    if (!res.ok) {
-      throw new Error("Sure meali şu anda yüklenemedi. İnternet bağlantınızı kontrol edin.");
+    const res = await fetch(`/api/quran/surah/${surahNumber}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Kur’an servisi HTML döndürdü. Cloudflare Pages Functions dağıtımını kontrol edin.');
     }
     const json = (await res.json()) as {
-      source: string;
-      ayahs: Array<{ numberInSurah: number; globalNumber: number; arabicText: string; turkishMeal: string }>;
+      source?: string;
+      error?: string;
+      ayahs?: Array<{ numberInSurah: number; globalNumber: number; arabicText: string; turkishMeal: string }>;
     };
+    if (!res.ok || !Array.isArray(json.ayahs) || json.ayahs.length === 0) {
+      throw new Error(json.error || 'Sure metni yüklenemedi. Lütfen yeniden deneyin.');
+    }
     const ayahs: AyahItem[] = json.ayahs.map((a) => ({
       ...a,
       audioUrl: buildAyahAudioUrl(reciter, surahNumber, a.numberInSurah),
     }));
-    return { ayahs, source: json.source };
+    return { ayahs, source: json.source || "Kur’an metni" };
   }
 }
 
