@@ -20,6 +20,7 @@ export async function onRequestGet({env,params,request}){
   let discovered=[];
   let providerError=null;
   let providerNotice="";
+  let providerDiagnostics=[];
   try{
     const refresh=new URL(request.url).searchParams.get("refresh")==="1";
     // A refresh searches different term batches, not the same first results repeatedly.
@@ -39,6 +40,7 @@ export async function onRequestGet({env,params,request}){
       unique.add(t.contentId);return true;
     });
     providerNotice=successful.map(d=>d.notice).find(Boolean)||"";
+    providerDiagnostics=successful.map((d,i)=>({page:i,total:d.total||0,details:d.diagnostics||null}));
     if(results.some(r=>r.status==="rejected"))console.warn("Partial catalog search failure",categoryId);
   }catch(e){providerError=String(e?.message||e).slice(0,180);console.error("catalog provider",e);}
   let saved=0;
@@ -54,7 +56,7 @@ export async function onRequestGet({env,params,request}){
   const tracks=[...discovered,...cached].filter(t=>{if(ids.has(t.contentId))return false;ids.add(t.contentId);return true;});
   return json({
     playlists:[],tracks,source:discovered.length?"open_catalog":cached.length?"d1":"none",
-    diagnostics:{d1ReadError:dbError,providerError,d1WriteError:writeError,discovered:discovered.length,cached:cached.length,saved},
+    diagnostics:{d1ReadError:dbError,providerError,d1WriteError:writeError,discovered:discovered.length,cached:cached.length,saved,providers:providerDiagnostics},
     notice:tracks.length?"Açık lisanslı katalog kayıtları listeleniyor.":providerNotice||"Bu kategori için doğrulanmış lisanslı ses kaydı bulunamadı."
   });
 }
