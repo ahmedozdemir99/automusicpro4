@@ -4,6 +4,8 @@ import { ArtworkMotif } from '../types/media';
 interface ArtworkCoverProps {
   motif: ArtworkMotif;
   title?: string;
+  categoryId?: string;
+  imageUrl?: string;
   arabicTitle?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
@@ -30,16 +32,46 @@ const MOTIF_GRADIENTS: Record<ArtworkMotif, string> = {
 
 export const ArtworkCover: React.FC<ArtworkCoverProps> = ({
   motif,
+  title,
+  categoryId,
+  imageUrl,
   arabicTitle,
   size = 'md',
   className = '',
 }) => {
   const showDetail = size === 'lg' || size === 'xl';
+  const [imageFailed, setImageFailed] = React.useState(false);
+  React.useEffect(() => setImageFailed(false), [imageUrl]);
+  const coverLabels: Record<string, { symbol: string; caption: string }> = {
+    nostalji: { symbol: '◉', caption: 'ESKİ PLAKLAR' },
+    karadeniz: { symbol: '≈', caption: 'KEMENÇE · HORON' },
+    arapca: { symbol: 'عود', caption: 'ARAP MÜZİĞİ' },
+    azerice: { symbol: '♫', caption: 'AZERBAYCAN · MUĞAM' },
+    lazca: { symbol: '≈', caption: 'LAZCA EZGİLER' },
+    turkuler: { symbol: '♬', caption: 'ANADOLU TÜRKÜLERİ' },
+    arabesk: { symbol: '♥', caption: 'ARABESK' },
+    turk_sanat: { symbol: '♪', caption: 'FASIL · MAKAM' },
+    turk_pop: { symbol: '✦', caption: 'TÜRKÇE POP' },
+    turk_rock: { symbol: '⚡', caption: 'ANADOLU ROCK' },
+    ozgun: { symbol: '✎', caption: 'ÖZGÜN MÜZİK' },
+    ilahi: { symbol: '☪', caption: 'İLAHİ' },
+    ezgi: { symbol: '✧', caption: 'EZGİ' },
+    nesid: { symbol: '♫', caption: 'NEŞİD' },
+    zikirli_ilahiler: { symbol: '☪', caption: 'ZİKİRLİ İLAHİLER' },
+    tasavvuf: { symbol: '✺', caption: 'TASAVVUF · NEY' },
+    kuran: { symbol: '﷽', caption: 'KUR’AN-I KERİM' },
+  };
+  const label = categoryId ? coverLabels[categoryId] : undefined;
 
   return (
     <div
       className={`relative shrink-0 overflow-hidden bg-gradient-to-br ${MOTIF_GRADIENTS[motif]} border border-white/[0.08] flex items-center justify-center select-none ${SIZE_CLASSES[size]} ${className}`}
     >
+      {imageUrl && /^https:\/\//i.test(imageUrl) && !imageFailed && (
+        <img src={imageUrl} alt={title ? `${title} albüm kapağı` : 'Albüm kapağı'} loading="lazy"
+          referrerPolicy="no-referrer" onError={() => setImageFailed(true)}
+          className="absolute inset-0 w-full h-full object-cover z-20" />
+      )}
       {/* Subtle architectural burnished gold geometric SVG motif */}
       <svg
         viewBox="0 0 120 120"
@@ -102,7 +134,12 @@ export const ArtworkCover: React.FC<ArtworkCoverProps> = ({
         )}
       </svg>
 
-      {arabicTitle ? (
+      {label && !arabicTitle ? (
+        <div className="relative z-10 flex flex-col items-center justify-center text-center px-1.5 gap-1">
+          <span className={`text-[#E5C158] leading-none ${showDetail ? 'text-6xl' : size === 'md' ? 'text-3xl' : 'text-xl'}`}>{label.symbol}</span>
+          <span className={`font-semibold text-[#E8CF78] leading-tight tracking-wide ${showDetail ? 'text-xs' : 'text-[7px]'}`}>{label.caption}</span>
+        </div>
+      ) : arabicTitle ? (
         <span
           className={`relative z-10 font-arabic text-[#E8CF78] drop-shadow-sm text-center px-2 leading-tight ${
             showDetail ? 'text-4xl' : size === 'md' ? 'text-base' : 'text-xs'
