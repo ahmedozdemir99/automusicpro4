@@ -469,6 +469,74 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
 // ============================================================
 // Screen 5: Şarkı Listesi (Spotify-style DB Playlists + Filters + Phone Upload)
 // ============================================================
+
+const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string }> = ({ categoryId }) => {
+  const supported = ['arabesk','turk_pop','nostalji','turkuler','karadeniz'].includes(categoryId);
+  const [artists,setArtists] = useState<string[]>([]);
+  const [artist,setArtist] = useState('');
+  const [albums,setAlbums] = useState<Array<{id:string;title:string;year:string;coverUrl:string;sourceUrl:string}>>([]);
+  const [loading,setLoading] = useState(false);
+  const [notice,setNotice] = useState('');
+  const [videoLink,setVideoLink] = useState('');
+  const [videoId,setVideoId] = useState('');
+  const [videoError,setVideoError] = useState('');
+  useEffect(() => {
+    setArtist('');setAlbums([]);setArtists([]);setVideoId('');setVideoLink('');
+    if (!supported) return;
+    let active=true;
+    fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId))
+      .then(r=>{if(!r.ok)throw Error();return r.json();})
+      .then(d=>{if(active)setArtists(d.artists||[]);})
+      .catch(()=>{if(active)setNotice('Sanatçılar yüklenemedi.');});
+    return ()=>{active=false;};
+  },[categoryId,supported]);
+  const chooseArtist = async (name:string) => {
+    setArtist(name);setAlbums([]);setNotice('');setLoading(true);
+    try {
+      const res=await fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId)+'&artist='+encodeURIComponent(name));
+      if(!res.ok)throw Error();
+      const data=await res.json();setAlbums(data.albums||[]);setNotice(data.notice||'');
+    }catch{setNotice('Albüm bilgileri şu anda yüklenemedi.');}
+    finally{setLoading(false);}
+  };
+  const playVideo = () => {
+    try {
+      const url=new URL(videoLink.trim());
+      const host=url.hostname.toLowerCase();
+      let id='';
+      if(['youtu.be','www.youtu.be'].includes(host))id=url.pathname.split('/')[1]||'';
+      else if(['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com'].includes(host))
+        id=url.pathname==='/watch'?(url.searchParams.get('v')||''):url.pathname.match(/^\/(?:embed|shorts)\/([^/]+)/)?.[1]||'';
+      if(!/^[A-Za-z0-9_-]{11}$/.test(id))throw Error();
+      setVideoId(id);setVideoError('');
+    }catch{setVideoError('Geçerli bir YouTube video bağlantısı girin.');}
+  };
+  return <div className="space-y-4">
+    {supported && <section className="p-4 rounded-2xl border border-[#D4AF37]/20 bg-[#121216] space-y-3">
+      <h2 className="text-base font-semibold text-[#F5F2EB]">Gerçek sanatçılar ve albümleri</h2>
+      <p className="text-xs text-[#9B978E]">MusicBrainz albüm verileri; bunlar çalınabilir kayıt değildir.</p>
+      <div className="flex flex-wrap gap-2">{artists.map(name=><button type="button" key={name} onClick={()=>void chooseArtist(name)}
+        className={`px-3 py-2 rounded-lg text-xs border ${artist===name?'bg-[#D4AF37] text-black border-[#D4AF37]':'border-white/15 text-[#F5F2EB]'}`}>{name}</button>)}</div>
+      {loading && <p className="text-xs text-[#D4AF37]">Albümler yükleniyor…</p>}
+      {notice && <p className="text-xs text-[#9B978E]">{notice}</p>}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">{albums.map(a=><div key={a.id} className="rounded-xl overflow-hidden border border-white/10">
+        <div className="aspect-square bg-[#201910]"><img src={a.coverUrl} alt={a.title} loading="lazy" className="w-full h-full object-cover" onError={e=>{e.currentTarget.style.display='none';}} /></div>
+        <div className="p-2"><p className="text-xs text-[#F5F2EB] line-clamp-2">{a.title}</p><p className="text-[11px] text-[#9B978E]">{a.year||'Yıl bilinmiyor'}</p></div>
+      </div>)}</div>
+    </section>}
+    <section className="p-4 rounded-2xl border border-white/10 bg-[#121216] space-y-3">
+      <h2 className="text-base font-semibold text-[#F5F2EB]">Uygulama içinde YouTube oynat</h2>
+      <p className="text-xs text-[#9B978E]">Resmî video bağlantısını yapıştırın. Gömülmeye izin verilen videolar burada açılır; oynatıcı görünür kalmalıdır.</p>
+      <form className="flex flex-col sm:flex-row gap-2" onSubmit={e=>{e.preventDefault();playVideo();}}>
+        <input type="url" value={videoLink} onChange={e=>setVideoLink(e.target.value)} aria-label="YouTube video bağlantısı" placeholder="YouTube video bağlantısı" className="flex-1 min-w-0 rounded-lg bg-black/30 border border-white/15 px-3 py-2 text-sm text-white" />
+        <button type="submit" className="rounded-lg bg-[#D4AF37] text-black font-semibold text-sm px-4 py-2">Uygulamada oynat</button>
+      </form>
+      {videoError && <p role="alert" className="text-xs text-amber-400">{videoError}</p>}
+      {videoId && <div className="aspect-video w-full bg-black rounded-xl overflow-hidden"><iframe key={videoId} title="YouTube oynatıcı" src={`https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1`} className="w-full h-full border-0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+    </section>
+  </div>;
+};
+
 export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> = ({ categoryId, title }) => {
   const {
     categories,
@@ -554,7 +622,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
 
       {/* Category Header */}
       <div className="p-6 rounded-3xl bg-[#121216] border border-white/[0.07] flex flex-col sm:flex-row items-start sm:items-center gap-6">
-        <ArtworkCover motif={category?.motif ?? 'custom'} size="lg" />
+        <ArtworkCover motif={category?.motif ?? 'custom'} categoryId={categoryId} title={title} size="lg" />
         <div className="space-y-3 flex-1 min-w-0">
           <p className="text-xs font-medium text-[#D4AF37]">
             {category ? `${category.language} · ${category.genre}` : 'Müzik Listesi'} · {allTracks.length} kayıt
@@ -606,6 +674,8 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
           </div>
         </div>
       </div>
+
+      {categoryId && categoryId !== 'kuran' && <VerifiedAndEmbeddedCatalog key={categoryId} categoryId={categoryId} />}
 
       {/* Spotify-style Curated Database Playlists for this Category */}
       {curatedPlaylists.length > 0 && (
