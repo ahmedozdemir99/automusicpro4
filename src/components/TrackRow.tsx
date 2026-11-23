@@ -111,7 +111,7 @@ export const TrackRow: React.FC<TrackRowProps> = ({
         onClick={handlePrimaryClick}
         className="shrink-0 focus-visible:outline-2 focus-visible:outline-[#D4AF37] rounded-lg"
       >
-        <ArtworkCover motif={item.motif} arabicTitle={item.arabicTitle} size="xs" />
+        <ArtworkCover motif={item.motif} categoryId={item.categoryId} imageUrl={item.coverUrl} arabicTitle={item.arabicTitle} size="xs" />
       </button>
 
       {/* Title & Clean Unboxed Metadata */}
