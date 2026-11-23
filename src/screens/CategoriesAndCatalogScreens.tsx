@@ -469,6 +469,48 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
 // Screen 5: Şarkı Listesi (Category Track List + Filters + Real Open Catalog + Local Upload)
 // ============================================================
 
+
+// Only embed a user-provided YouTube video ID through YouTube's official player.
+// No stream extraction, audio-only background playback or hidden player.
+const getYouTubeVideoId = (raw: string): string | null => {
+  try {
+    const u = new URL(raw.trim());
+    const host = u.hostname.toLowerCase();
+    let id: string | null = null;
+    if (host === 'youtu.be' || host === 'www.youtu.be') id = u.pathname.split('/')[1];
+    else if (['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com'].includes(host)) {
+      if (u.pathname === '/watch') id = u.searchParams.get('v');
+      else if (u.pathname.startsWith('/shorts/') || u.pathname.startsWith('/embed/')) id = u.pathname.split('/')[2];
+    }
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch { return null; }
+};
+const EmbeddedYouTubePlayer: React.FC = () => {
+  const [link, setLink] = useState('');
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const openVideo = () => {
+    const id = getYouTubeVideoId(link);
+    if (!id) { setError('Geçerli bir YouTube video bağlantısı girin.'); return; }
+    setError(''); setVideoId(id);
+  };
+  return <section className="rounded-2xl border border-white/10 bg-[#121216] p-4 sm:p-6 space-y-3">
+    <h2 className="text-lg font-semibold text-[#F5F2EB]">Uygulama içi YouTube oynatıcı</h2>
+    <p className="text-xs text-[#9B978E]">Sanatçının resmî YouTube videosunun bağlantısını yapıştırın. Video, izin veriliyorsa uygulamadan ayrılmadan açılır. YouTube oynatıcı kuralları geçerlidir.</p>
+    <form className="flex flex-col sm:flex-row gap-2" onSubmit={e => {e.preventDefault();openVideo();}}>
+      <input type="url" aria-label="YouTube video bağlantısı" placeholder="https://www.youtube.com/watch?v=..." value={link} onChange={e=>setLink(e.target.value)}
+        className="flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-[#09090B] border border-white/15 text-[#F5F2EB] text-sm" />
+      <button type="submit" className="px-4 py-2.5 rounded-lg bg-[#D4AF37] text-[#09090B] text-sm font-semibold">Uygulamada oynat</button>
+    </form>
+    {error && <p role="alert" className="text-xs text-amber-400">{error}</p>}
+    {videoId && <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
+      <iframe key={videoId} src={`https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1`}
+        title="YouTube video oynatıcı" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin" allowFullScreen className="w-full h-full border-0" />
+    </div>}
+  </section>;
+};
+
 type VerifiedAlbum = { id: string; title: string; year: string; artist: string; coverUrl: string; sourceUrl: string };
 const VerifiedCatalog: React.FC<{ categoryId: string }> = ({ categoryId }) => {
   const [artists, setArtists] = useState<string[]>([]);
@@ -649,6 +691,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         </div>
       </div>
 
+      {categoryId && categoryId !== 'kuran' && <EmbeddedYouTubePlayer key={'yt-'+categoryId} />}
       {categoryId && <VerifiedCatalog key={categoryId} categoryId={categoryId} />}
 
       {/* Filters Row (Sanatçı, Albüm, Format) */}
