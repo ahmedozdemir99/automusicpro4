@@ -113,7 +113,9 @@ export async function onRequestGet({request,env}){
   // Rotate independent search terms instead of repeating the same six on every refresh.
   const selected=q?[...terms]:Array.from({length:Math.min(4,terms.length)},(_,i)=>terms[(page*4+i)%terms.length]);
   const [j,a]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif)]);
-  const merged=[...(j.status==="fulfilled"?j.value:[]),...(a.status==="fulfilled"?a.value:[])];
+  const jamendoTracks=j.status==="fulfilled"?j.value:[];
+  const archiveTracks=a.status==="fulfilled"?a.value:[];
+  const merged=[...jamendoTracks,...archiveTracks];
   const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,80);
-  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected},{headers:{"Cache-Control":"public, max-age=300"}});
+  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
 }
