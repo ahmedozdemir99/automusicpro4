@@ -104,13 +104,25 @@ async function archive(terms,category,lang,genre,motif){
   return results.flatMap(r=>r.status==="fulfilled"?r.value:[]);
 }
 
-async function openverse(terms,category,lang,genre,motif){
+async function openverse(terms,category,lang,genre,motif,env){
+  let token="";
+  let authError=null;
+  if(env.OPENVERSE_CLIENT_ID&&env.OPENVERSE_CLIENT_SECRET){
+    try{
+      const body=new URLSearchParams({grant_type:"client_credentials",client_id:env.OPENVERSE_CLIENT_ID,client_secret:env.OPENVERSE_CLIENT_SECRET});
+      const res=await fetch("https://api.openverse.org/v1/auth_tokens/token/",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body.toString()});
+      if(!res.ok)throw Error("OAuth HTTP "+res.status);
+      token=String((await res.json()).access_token||"");
+    }catch(e){authError=String(e).slice(0,130);}
+  }
   const results=await Promise.allSettled(terms.map(async term=>{
     const url=new URL("https://api.openverse.org/v1/audio/");
     url.searchParams.set("q",term);
     url.searchParams.set("category","music");
-    url.searchParams.set("page_size","30");
-    const response=await fetch(url.toString(),{headers:{"Accept":"application/json"}});
+    url.searchParams.set("page_size",token?"30":"20");
+    const headers={"Accept":"application/json"};
+    if(token)headers.Authorization="Bearer "+token;
+    const response=await fetch(url.toString(),{headers});
     if(!response.ok)throw Error("Openverse HTTP "+response.status);
     const data=await response.json();
     return (data.results||[]).flatMap(item=>{
@@ -125,7 +137,7 @@ async function openverse(terms,category,lang,genre,motif){
       return [{contentId:"openverse:"+id,title:safeString(title),artistId:"openverse:"+normalize(artist),artistName:safeString(artist),album:genre,categoryId:category,language:lang,genre,durationSec:Number(item.duration)||0,streamUrl:audio,sourceProvider:"openverse",downloadAllowed:false,licenseName:safeString(item.license_url||license,240),format:/\.ogg|\.oga|\.opus/i.test(audio)?"OGG":"MP3",motif,coverUrl:item.thumbnail||undefined}];
     });
   }));
-  return {tracks:results.flatMap(r=>r.status==="fulfilled"?r.value:[]),diagnostics:{queries:results.map((r,i)=>r.status==="fulfilled"?{term:terms[i],accepted:r.value.length}:{term:terms[i],error:String(r.reason).slice(0,130)})}};
+  return {tracks:results.flatMap(r=>r.status==="fulfilled"?r.value:[]),diagnostics:{authenticated:Boolean(token),credentialsConfigured:Boolean(env.OPENVERSE_CLIENT_ID&&env.OPENVERSE_CLIENT_SECRET),authError,queries:results.map((r,i)=>r.status==="fulfilled"?{term:terms[i],accepted:r.value.length}:{term:terms[i],error:String(r.reason).slice(0,130)})}};
 }
 
 export async function onRequestGet({request,env}){
@@ -142,7 +154,7 @@ export async function onRequestGet({request,env}){
   if(!terms.length)return Response.json({tracks:[],notice:"Arama terimi bulunamadı."});
   // Rotate independent search terms instead of repeating the same six on every refresh.
   const selected=q?[...terms]:Array.from({length:Math.min(4,terms.length)},(_,i)=>terms[(page*4+i)%terms.length]);
-  const [j,a,o]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif),openverse(selected,category,lang,genre,motif)]);
+  const [j,a,o]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif),openverse(selected,category,lang,genre,motif,env)]);
   const jamendoTracks=j.status==="fulfilled"?j.value.tracks:[];
   const archiveTracks=a.status==="fulfilled"?a.value:[];
   const openverseTracks=o.status==="fulfilled"?o.value.tracks:[];
