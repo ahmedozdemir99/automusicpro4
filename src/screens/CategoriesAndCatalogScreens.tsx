@@ -199,7 +199,7 @@ export const CategoriesScreen: React.FC = () => {
                   : 'bg-[#121216] hover:bg-[#19181F] border-white/[0.06] hover:border-[#D4AF37]/30'
               }`}
             >
-              <ArtworkCover motif={cat.motif} size="md" />
+              <ArtworkCover motif={cat.motif} categoryId={cat.id} title={cat.name} size="md" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-mono tabular-nums text-[#D4AF37]">
