@@ -96,22 +96,28 @@ export class DatabaseCatalogRepository {
     categoryId: string,
     forceRefresh = false
   ): Promise<{ playlists: CuratedPlaylist[]; tracks: MediaItem[]; notice?: string }> {
-    // Prefer a real database when deployed, but use the licensed public catalog
-    // when /api/db endpoints have not been configured.
+    let dbTracks: MediaItem[] = [];
+    let dbPlaylists: CuratedPlaylist[] = [];
+    let dbNotice = '';
     try {
       const qs = forceRefresh ? '?refresh=1' : '';
       const res = await fetch(`/api/db/categories/${encodeURIComponent(categoryId)}/playlists${qs}`);
       if (res.ok) {
         const data = (await res.json()) as { playlists?: CuratedPlaylist[]; tracks?: MediaItem[]; notice?: string };
-        return { playlists: data.playlists ?? [], tracks: data.tracks ?? [], notice: data.notice };
+        dbTracks = data.tracks ?? [];
+        dbPlaylists = data.playlists ?? [];
+        dbNotice = data.notice ?? '';
       }
     } catch {
-      // Database is optional: proceed with open-license providers.
+      // D1 is optional; try the public catalog below.
     }
-
+    // A successful D1 connection with zero rows must not prevent catalog discovery.
+    if (dbTracks.length > 0 && !forceRefresh) {
+      return { playlists: dbPlaylists, tracks: dbTracks, notice: dbNotice };
+    }
     const category = (await import('../data/categories')).DEFAULT_CATEGORIES.find(c => c.id === categoryId);
     if (!category || category.isQuran) {
-      return { playlists: [], tracks: [], notice: 'Bu kategori için çevrimiçi katalog tanımlı değil. Yerel ses dosyası ekleyebilirsiniz.' };
+      return { playlists: dbPlaylists, tracks: dbTracks, notice: dbNotice || 'Bu kategori için çevrimiçi katalog tanımlı değil.' };
     }
     try {
       const params = new URLSearchParams({
@@ -124,15 +130,21 @@ export class DatabaseCatalogRepository {
       const res = await fetch(`/api/catalog/open-music?${params.toString()}`);
       if (!res.ok) throw new Error('catalog unavailable');
       const data = (await res.json()) as { tracks?: MediaItem[]; notice?: string };
-      const tracks = (data.tracks ?? []).filter(t => t.categoryId === categoryId && !!t.streamUrl);
+      const discovered = (data.tracks ?? []).filter(t => t.categoryId === categoryId && !!t.streamUrl);
+      const seen = new Set<string>();
+      const tracks = [...dbTracks, ...discovered].filter(t => {
+        if (!t.contentId || seen.has(t.contentId)) return false;
+        seen.add(t.contentId);
+        return true;
+      });
       return {
-        playlists: [],
+        playlists: dbPlaylists,
         tracks,
-        notice: tracks.length ? 'Açık lisanslı müzik kataloğundan yüklendi. SQLite veritabanı bağlı değil.' :
-          (data.notice || 'Bu kategoride doğrulanmış açık lisanslı kayıt bulunamadı.'),
+        notice: tracks.length ? 'Lisansı doğrulanmış açık katalog kayıtları listeleniyor.' :
+          (data.notice || dbNotice || 'Bu kategoride doğrulanmış açık lisanslı kayıt bulunamadı.'),
       };
     } catch {
-      return { playlists: [], tracks: [], notice: 'Müzik kataloğuna şu anda ulaşılamıyor. İnternet bağlantınızı kontrol edin.' };
+      return { playlists: dbPlaylists, tracks: dbTracks, notice: dbNotice || 'Müzik kataloğuna şu anda ulaşılamıyor.' };
     }
   }
 
