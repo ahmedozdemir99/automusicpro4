@@ -482,7 +482,7 @@ const AlbumCover: React.FC<{imageUrl:string;title:string}> = ({imageUrl,title}) 
 };
 
 const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string }> = ({ categoryId }) => {
-  const supported = ['arabesk','turk_pop','nostalji','turkuler','karadeniz'].includes(categoryId);
+  const supported = categoryId !== 'kuran' && categoryId !== 'custom';
   const [artists,setArtists] = useState<string[]>([]);
   const [artist,setArtist] = useState('');
   const [albums,setAlbums] = useState<Array<{id:string;title:string;year:string;coverUrl:string;sourceUrl:string}>>([]);
