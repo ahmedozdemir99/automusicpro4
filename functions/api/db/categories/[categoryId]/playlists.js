@@ -12,7 +12,7 @@ export async function onRequestGet({env,params,request}){
   if(!category || category.isQuran)return Response.json({playlists:[],tracks:cached});
   const url=new URL("/api/catalog/open-music",request.url);
   for(const [key,value] of Object.entries({categoryId,language:category.language,genre:category.genre,motif:category.motif}))url.searchParams.set(key,value);
-  const upstream=await fetch(url.toString());
+  const upstream=await env.ASSETS?.fetch ? await env.ASSETS.fetch(new Request(url.toString())) : await fetch(url.toString());
   if(!upstream.ok)throw Error("catalog unavailable");
   const data=await upstream.json();
   const tracks=(data.tracks||[]).filter(t=>t.categoryId===categoryId&&t.contentId&&t.streamUrl);
@@ -21,5 +21,5 @@ export async function onRequestGet({env,params,request}){
    for(let i=0;i<statements.length;i+=40)await env.DB.batch(statements.slice(i,i+40));
   }
   return Response.json({playlists:[],tracks:tracks.length?tracks:cached,notice:data.notice||"Açık lisanslı katalog; doğrulanmış Spotify kayıtları değildir."});
- }catch{return Response.json({playlists:[],tracks:[],notice:"D1 veya müzik kaynağına ulaşılamadı."},{status:503})}
+ }catch{return Response.json({playlists:[],tracks:[],notice:"D1 sorgusu veya açık müzik sağlayıcısı başarısız oldu. Listeyi yenileyin."},{status:503})}
 }
