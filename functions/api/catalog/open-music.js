@@ -1,20 +1,20 @@
 const DEFINITIONS = {
-  nostalji:{terms:["Turkish vintage music","Turkish classical","Türk sanat müziği"],hints:["turkish","türk","osman","ottoman","makam","nostal","fasıl"]},
-  karadeniz:{terms:["Karadeniz kemençe","Turkish Black Sea folk","horon tulum"],hints:["karadeniz","kemençe","kemence","horon","tulum","trabzon","rize","black sea"]},
-  turkuler:{terms:["Turkish folk baglama","Anatolian folk music","türkü bağlama"],hints:["folk","türkü","turku","bağlama","baglama","anatol","anadolu","aşık","asik"]},
-  arabesk:{terms:["Turkish arabesk","arabesk müzik"],hints:["arabesk","arabesque"]},
-  turk_sanat:{terms:["Turkish classical makam","Turkish fasıl kanun","Ottoman classical music"],hints:["makam","fasıl","fasil","kanun","ud","tanbur","turkish classical","ottoman"]},
-  turk_pop:{terms:["Turkish pop","Türkçe pop","Istanbul pop"],hints:["turkish pop","türkçe pop","pop"]},
-  turk_rock:{terms:["Anatolian rock","Turkish rock"],hints:["anatolian rock","turkish rock","türk rock","anadolu rock"]},
-  ozgun:{terms:["Özgün müzik","Turkish acoustic folk"],hints:["özgün","ozgun","acoustic folk","türk"]},
-  ilahi:{terms:["Turkish ilahi","Türkçe ilahi","sufi hymn"],hints:["ilahi","hymn","sufi","tasavvuf"]},
-  ezgi:{terms:["Turkish ezgi","özgün ezgi"],hints:["ezgi","özgün","ozgun","ilahi"]},
-  tasavvuf:{terms:["Turkish sufi ney","Mevlevi music","tasavvuf"],hints:["sufi","tasavvuf","mevlevi","ney","sema"]},
-  nesid:{terms:["Turkish nasheed","nasheed"],hints:["nasheed","neşid","nesid","anasheed"]},
-  zikirli_ilahiler:{terms:["Turkish zikr ilahi","Sufi dhikr"],hints:["zikir","zikr","dhikr","ilahi","sufi"]},
-  arapca:{terms:["Arabic oud music","Arabic classical music"],hints:["arabic","oud","arab","maqam"]},
-  azerice:{terms:["Azerbaijan mugham","Azerbaijani folk tar"],hints:["azer","mugham","muğam","tar"]},
-  lazca:{terms:["Lazuri folk","Laz music tulum"],hints:["laz","lazuri","tulum"]}
+  nostalji:{terms:["Turkish vintage music","Zeki Müren taş plak","Müzeyyen Senar","Safiye Ayla","Turkish 78rpm","Türkçe nostalji","Turkish oldies","Türk sanat müziği eski kayıt"],hints:["turkish","türk","osman","ottoman","makam","nostal","fasıl"]},
+  karadeniz:{terms:["Karadeniz kemençe","Birol Topaloğlu","Kazım Koyuncu","Volkan Konak","Karadeniz türkü","horon tulum","Turkish Black Sea folk","Trabzon Rize Artvin müzik"],hints:["karadeniz","kemençe","kemence","horon","tulum","trabzon","rize","black sea"]},
+  turkuler:{terms:["Turkish folk baglama","Neşet Ertaş","Aşık Veysel","Türk halk müziği","Anadolu türkü","bozlak","deyiş bağlama","Anatolian folk music"],hints:["folk","türkü","turku","bağlama","baglama","anatol","anadolu","aşık","asik"]},
+  arabesk:{terms:["Turkish arabesk","Orhan Gencebay","Ferdi Tayfur","Müslüm Gürses","İbrahim Tatlıses","arabesk müzik","Türkçe arabesk"],hints:["arabesk","arabesque"]},
+  turk_sanat:{terms:["Turkish classical makam","Türk sanat müziği","Münir Nurettin Selçuk","Tanburi Cemil Bey","fasıl kanun","Türk musikisi","Ottoman classical music"],hints:["makam","fasıl","fasil","kanun","ud","tanbur","turkish classical","ottoman"]},
+  turk_pop:{terms:["Turkish pop","Türkçe pop","Turkish indie pop","Istanbul pop","Türk pop akustik","Turkish pop music"],hints:["turkish pop","türkçe pop","pop"]},
+  turk_rock:{terms:["Anatolian rock","Turkish rock","Anadolu rock","Türkçe rock","Turkish psychedelic rock","Anatolian psychedelic"],hints:["anatolian rock","turkish rock","türk rock","anadolu rock"]},
+  ozgun:{terms:["Özgün müzik","Turkish acoustic folk","özgün müzik sanatçı","Anadolu özgün","Turkish singer songwriter"],hints:["özgün","ozgun","acoustic folk","türk"]},
+  ilahi:{terms:["Turkish ilahi","Türkçe ilahi","sufi hymn","dini musiki ilahi","Turkish islamic hymn","ilahiler"],hints:["ilahi","hymn","sufi","tasavvuf"]},
+  ezgi:{terms:["Turkish ezgi","özgün ezgi","Türkçe ezgi","Anadolu ezgileri","ezgi müzik"],hints:["ezgi","özgün","ozgun","ilahi"]},
+  tasavvuf:{terms:["Turkish sufi ney","Mevlevi music","tasavvuf","sema ney","sufi music Turkey","Mevlana ney"],hints:["sufi","tasavvuf","mevlevi","ney","sema"]},
+  nesid:{terms:["Turkish nasheed","nasheed","Türkçe neşid","islami neşid","anasheed Turkish"],hints:["nasheed","neşid","nesid","anasheed"]},
+  zikirli_ilahiler:{terms:["Turkish zikr ilahi","Sufi dhikr","zikirli ilahi","zikir müziği","dhikr sufi"],hints:["zikir","zikr","dhikr","ilahi","sufi"]},
+  arapca:{terms:["Arabic oud music","Arabic classical music","Fairuz","Umm Kulthum","Arabic maqam","Arabic folk music","oud taqsim"],hints:["arabic","oud","arab","maqam"]},
+  azerice:{terms:["Azerbaijan mugham","Azerbaijani folk tar","Azerice müzik","Alim Qasimov","Azerbaijan ashug","Azerbaycan muğam"],hints:["azer","mugham","muğam","tar"]},
+  lazca:{terms:["Birol Topaloğlu","Lazuri","Lazca müzik","Laz music tulum","Kazım Koyuncu Lazca","Laz halk müziği","Lazuri folk","Lazona"],hints:["laz","lazuri","tulum"]}
 };
 const normalize=s=>String(s||"").toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i");
 const hasAny=(s,terms)=>terms.some(term=>normalize(s).includes(normalize(term)));
@@ -36,7 +36,7 @@ const RULES={
   zikirli_ilahiler:{positive:["zikir","zikr","dhikr"],negative:["pop","rock"]},
   arapca:{positive:["arabic","arab","oud","maqam"],negative:["turkish pop","turkish rock"]},
   azerice:{positive:["azerbaijan","azerbaijani","azerice","mugham","mugam"],negative:["turkish pop"]},
-  lazca:{positive:["lazuri","lazca","laz music"],negative:["turkish pop"]}
+  lazca:{positive:["lazuri","lazca","laz music","birol topaloglu","birol topaloğlu","lazona"],negative:["turkish pop"]}
 };
 function validCategory(meta,category,lang){
   const rule=RULES[category];if(!rule)return false;
@@ -61,7 +61,7 @@ function validCategory(meta,category,lang){
 const safeString=(s,n=160)=>String(s||"").replace(/<[^>]+>/g,"").slice(0,n);
 async function jamendo(env,terms,category,lang,genre,motif,offset){
   if(!env.JAMENDO_CLIENT_ID)return [];
-  const queries=terms.slice(0,3);
+  const queries=terms.slice(0,6);
   const responses=await Promise.allSettled(queries.map(async query=>{
     const u=new URL("https://api.jamendo.com/v3.0/tracks/");
     for(const [k,v] of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"60",offset:String(offset),search:query,audioformat:"mp32",include:"musicinfo+licenses",type:"single albumtrack",imagesize:"300"}))u.searchParams.set(k,v);
@@ -79,7 +79,7 @@ async function jamendo(env,terms,category,lang,genre,motif,offset){
   return responses.flatMap(r=>r.status==="fulfilled"?r.value:[]);
 }
 async function archive(terms,category,lang,genre,motif){
-  const searches=terms.slice(0,3);
+  const searches=terms.slice(0,6);
   const results=await Promise.allSettled(searches.map(async term=>{
     const u=new URL("https://archive.org/advancedsearch.php");
     // Search metadata; do not trust a broad OR expression as proof of language.
