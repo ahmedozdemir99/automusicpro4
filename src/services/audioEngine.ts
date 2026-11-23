@@ -65,7 +65,8 @@ export class AutoMusicAudioEngine {
   private bassFilter: BiquadFilterNode | null = null;
   private trebleFilter: BiquadFilterNode | null = null;
   private analyser: AnalyserNode | null = null;
-  private dspSupported = true;
+  // Keep native audio output: Android WebView can report playback while a suspended WebAudio graph is silent.
+  private dspSupported = false;
   private dspConnected = false;
 
   constructor() {
