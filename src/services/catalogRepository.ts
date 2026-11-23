@@ -96,25 +96,44 @@ export class DatabaseCatalogRepository {
     categoryId: string,
     forceRefresh = false
   ): Promise<{ playlists: CuratedPlaylist[]; tracks: MediaItem[]; notice?: string }> {
-    const qs = forceRefresh ? '?refresh=1' : '';
-    const res = await fetch(`/api/db/categories/${encodeURIComponent(categoryId)}/playlists${qs}`);
-    if (!res.ok) {
+    // Prefer a real database when deployed, but use the licensed public catalog
+    // when /api/db endpoints have not been configured.
+    try {
+      const qs = forceRefresh ? '?refresh=1' : '';
+      const res = await fetch(`/api/db/categories/${encodeURIComponent(categoryId)}/playlists${qs}`);
+      if (res.ok) {
+        const data = (await res.json()) as { playlists?: CuratedPlaylist[]; tracks?: MediaItem[]; notice?: string };
+        return { playlists: data.playlists ?? [], tracks: data.tracks ?? [], notice: data.notice };
+      }
+    } catch {
+      // Database is optional: proceed with open-license providers.
+    }
+
+    const category = (await import('../data/categories')).DEFAULT_CATEGORIES.find(c => c.id === categoryId);
+    if (!category || category.isQuran) {
+      return { playlists: [], tracks: [], notice: 'Bu kategori için çevrimiçi katalog tanımlı değil. Yerel ses dosyası ekleyebilirsiniz.' };
+    }
+    try {
+      const params = new URLSearchParams({
+        categoryId: category.id,
+        language: category.language,
+        genre: category.genre,
+        motif: category.motif,
+      });
+      if (forceRefresh) params.set('refresh', String(Date.now()));
+      const res = await fetch(`/api/catalog/open-music?${params.toString()}`);
+      if (!res.ok) throw new Error('catalog unavailable');
+      const data = (await res.json()) as { tracks?: MediaItem[]; notice?: string };
+      const tracks = (data.tracks ?? []).filter(t => t.categoryId === categoryId && !!t.streamUrl);
       return {
         playlists: [],
-        tracks: [],
-        notice: 'Veritabanı listelerine şu an ulaşılamıyor. Telefonunuzdan ses dosyası yükleyebilirsiniz.',
+        tracks,
+        notice: tracks.length ? 'Açık lisanslı müzik kataloğundan yüklendi. SQLite veritabanı bağlı değil.' :
+          (data.notice || 'Bu kategoride doğrulanmış açık lisanslı kayıt bulunamadı.'),
       };
+    } catch {
+      return { playlists: [], tracks: [], notice: 'Müzik kataloğuna şu anda ulaşılamıyor. İnternet bağlantınızı kontrol edin.' };
     }
-    const data = (await res.json()) as {
-      playlists?: CuratedPlaylist[];
-      tracks?: MediaItem[];
-      notice?: string;
-    };
-    return {
-      playlists: data.playlists ?? [],
-      tracks: data.tracks ?? [],
-      notice: data.notice,
-    };
   }
 
   async fetchAllCachedTracks(): Promise<MediaItem[]> {
