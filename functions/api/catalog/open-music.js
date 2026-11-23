@@ -43,6 +43,8 @@ function validCategory(meta,category,lang){
   const title=normalize(meta.title),artist=normalize(meta.artist),album=normalize(meta.album);
   const tags=normalize(meta.tags),description=normalize(meta.description);
   const text=[title,artist,album,tags,description].join(" ");
+  // Talks, podcasts and magazine interviews are not music tracks.
+  if(hasAny([title,album,tags].join(" "),["dergi","konuk","podcast","interview","röportaj","roportaj","söyleşi","soylesi","lecture","speech","konuşma","konusma"]))return false;
   const songLang=normalize(meta.lang);
   if(!title||!artist||artist==="unknown"||artist==="internet archive")return false;
   if(isTurkish(lang)){
