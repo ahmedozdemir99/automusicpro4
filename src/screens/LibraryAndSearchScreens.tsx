@@ -69,20 +69,20 @@ export const LibraryHubScreen: React.FC<{ initialTab?: 'playlists' | 'favorites'
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => navigate({ name: 'downloads' })}
-            className="px-4 py-2.5 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-white/10 text-xs font-medium text-[#F5F2EB] whitespace-nowrap"
+            className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-white/10 text-xs font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
           >
             İndirilenler ({downloads.length})
           </button>
           <button
             type="button"
             onClick={() => navigate({ name: 'create_playlist' })}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-xs font-semibold whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-xs font-semibold transition-colors whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 shrink-0" />
             Yeni Liste Oluştur
           </button>
         </div>
@@ -135,21 +135,21 @@ export const LibraryHubScreen: React.FC<{ initialTab?: 'playlists' | 'favorites'
               </button>
 
               <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/[0.06]">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 flex-1">
                   <button
                     type="button"
                     onClick={() => void playQueue(pl.items, false)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37] text-[#09090B] text-xs font-semibold"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-xs font-semibold transition-colors whitespace-nowrap"
                   >
-                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <Play className="w-3.5 h-3.5 fill-current shrink-0" />
                     Oynat
                   </button>
                   <button
                     type="button"
                     onClick={() => void playQueue(pl.items, true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.05] text-[#F5F2EB] text-xs font-medium"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-[#F5F2EB] text-xs font-medium transition-colors whitespace-nowrap"
                   >
-                    <Shuffle className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <Shuffle className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
                     Karışık
                   </button>
                 </div>
@@ -158,7 +158,7 @@ export const LibraryHubScreen: React.FC<{ initialTab?: 'playlists' | 'favorites'
                   type="button"
                   onClick={() => deletePlaylist(pl.id)}
                   aria-label={`${pl.name} listesini sil`}
-                  className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-[#8C887F] hover:text-red-400 hover:bg-white/[0.05]"
+                  className="w-9 h-9 flex items-center justify-center rounded-xl text-[#8C887F] hover:text-red-400 hover:bg-white/[0.05] transition-colors shrink-0"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -372,23 +372,23 @@ export const PlaylistDetailScreen: React.FC<{ playlistId: string }> = ({ playlis
             <p className="text-sm text-[#9B978E]">{playlist.description}</p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
             <button
               type="button"
               disabled={playlist.items.length === 0}
               onClick={() => void playQueue(playlist.items, false)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#D4AF37] disabled:opacity-40 text-[#09090B] text-sm font-semibold"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-40 text-[#09090B] text-sm font-semibold transition-colors whitespace-nowrap"
             >
-              <Play className="w-4 h-4 fill-current" />
+              <Play className="w-4 h-4 fill-current shrink-0" />
               Sıralı Oynat
             </button>
             <button
               type="button"
               disabled={playlist.items.length === 0}
               onClick={() => void playQueue(playlist.items, true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] disabled:opacity-40 border border-white/10 text-sm font-medium text-[#F5F2EB]"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] disabled:opacity-40 border border-white/10 text-sm font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
             >
-              <Shuffle className="w-4 h-4 text-[#D4AF37]" />
+              <Shuffle className="w-4 h-4 text-[#D4AF37] shrink-0" />
               Karışık Oynat
             </button>
           </div>
@@ -622,16 +622,16 @@ export const SearchScreen: React.FC = () => {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Örn: Yasin, يس, Karadeniz, İlahi, Sudeys, Ney..."
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#121216] border border-white/15 text-sm text-[#F5F2EB] placeholder:text-[#7C7970] focus:border-[#D4AF37] focus:outline-none"
+              placeholder="Örn: Yasin, يس, Neşet Ertaş, Barış Manço, Karadeniz, İlahi..."
+              className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#121216] border border-white/15 text-sm text-[#F5F2EB] placeholder:text-[#7C7970] focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
           <button
             type="submit"
             disabled={!query.trim() || searchingOnline}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#D4AF37] disabled:opacity-40 hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#D4AF37] disabled:opacity-40 hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold transition-colors whitespace-nowrap"
           >
-            {searchingOnline ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+            {searchingOnline ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Globe className="w-4 h-4 shrink-0" />}
             Katalogda Ara
           </button>
         </form>
@@ -697,7 +697,7 @@ export const SearchScreen: React.FC = () => {
                     onClick={() => navigate({ name: 'artist_detail', artistId: `reciter:${rec.id}` })}
                     className="p-4 rounded-2xl bg-[#121216] hover:bg-[#19181F] border border-white/[0.06] flex items-center gap-3 text-left"
                   >
-                    <ArtworkCover motif="quran" arabicTitle={rec.nameAr} size="sm" />
+                    <ArtworkCover motif="kuran" arabicTitle={rec.nameAr} size="sm" />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-[#F5F2EB] truncate">{rec.nameTr}</p>
                       <p className="text-xs text-[#9B978E] truncate">{rec.style}</p>

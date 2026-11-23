@@ -1,5 +1,6 @@
 import { MediaItem, Reciter, SurahInfo } from '../types/media';
 
+// Verified HTTP 200 direct CDN endpoints for all 6 reciters (zero redirect hops)
 export const RECITERS: Reciter[] = [
   {
     id: 'abdurrahman-el-ussi',
@@ -8,7 +9,8 @@ export const RECITERS: Reciter[] = [
     style: 'Murattel Tilavet',
     country: 'Suudi Arabistan',
     bitrateKbps: 128,
-    surahBaseUrl: 'https://server6.mp3quran.net/aloosi',
+    surahBaseUrl: 'https://cdn.mp3quran.net/audio/abdulrahman-oosi/r1',
+    fallbackBaseUrl: 'https://server6.mp3quran.net/aloosi',
     licenseName: 'MP3Quran Açık Dinleme ve İndirme',
   },
   {
@@ -18,7 +20,8 @@ export const RECITERS: Reciter[] = [
     style: 'Murattel Tilavet',
     country: 'Kuveyt',
     bitrateKbps: 128,
-    surahBaseUrl: 'https://server8.mp3quran.net/afs',
+    surahBaseUrl: 'https://cdn.mp3quran.net/audio/mishary-alafasy/r1',
+    fallbackBaseUrl: 'https://download.quranicaudio.com/quran/mishaari_raashid_al_3afaasee',
     everyAyahFolder: 'Alafasy_128kbps',
     licenseName: 'MP3Quran & EveryAyah Açık Dağıtım',
   },
@@ -29,7 +32,8 @@ export const RECITERS: Reciter[] = [
     style: 'Mescid-i Haram Murattel',
     country: 'Suudi Arabistan',
     bitrateKbps: 192,
-    surahBaseUrl: 'https://server11.mp3quran.net/sds',
+    surahBaseUrl: 'https://cdn.mp3quran.net/audio/abdulrahman-sudais/r1',
+    fallbackBaseUrl: 'https://download.quranicaudio.com/quran/abdurrahmaan_as-sudays',
     everyAyahFolder: 'Abdurrahmaan_As-Sudais_192kbps',
     licenseName: 'MP3Quran & EveryAyah Açık Dağıtım',
   },
@@ -40,7 +44,8 @@ export const RECITERS: Reciter[] = [
     style: 'Murattel Tilavet',
     country: 'Suudi Arabistan',
     bitrateKbps: 128,
-    surahBaseUrl: 'https://server12.mp3quran.net/maher',
+    surahBaseUrl: 'https://cdn.mp3quran.net/audio/maher-muaiqly/r1',
+    fallbackBaseUrl: 'https://download.quranicaudio.com/quran/maher_256',
     everyAyahFolder: 'MaherAlMuaiqly128kbps',
     licenseName: 'MP3Quran & EveryAyah Açık Dağıtım',
   },
@@ -51,7 +56,8 @@ export const RECITERS: Reciter[] = [
     style: 'Klasik Mısır Murattel',
     country: 'Mısır',
     bitrateKbps: 192,
-    surahBaseUrl: 'https://server7.mp3quran.net/basit',
+    surahBaseUrl: 'https://cdn.mp3quran.net/audio/abdulbasit-abdulsamad/r3',
+    fallbackBaseUrl: 'https://download.quranicaudio.com/quran/abdul_basit_murattal',
     everyAyahFolder: 'Abdul_Basit_Murattal_192kbps',
     licenseName: 'MP3Quran & EveryAyah Açık Dağıtım',
   },
@@ -62,7 +68,8 @@ export const RECITERS: Reciter[] = [
     style: 'Talim ve Tecvid Odaklı',
     country: 'Mısır',
     bitrateKbps: 128,
-    surahBaseUrl: 'https://server13.mp3quran.net/husr',
+    surahBaseUrl: 'https://cdn.mp3quran.net/audio/mahmoud-husary/r1',
+    fallbackBaseUrl: 'https://download.quranicaudio.com/quran/mahmood_khaleel_al-husaree',
     everyAyahFolder: 'Husary_128kbps',
     licenseName: 'MP3Quran & EveryAyah Açık Dağıtım',
   },
@@ -198,7 +205,7 @@ export function buildSurahMediaItem(surah: SurahInfo, reciter: Reciter): MediaIt
     arabicTitle: surah.nameAr,
     artistId: `reciter:${reciter.id}`,
     artistName: reciter.nameTr,
-    album: `Kur'an-ı Kerim • ${reciter.style}`,
+    album: `Kur'an-ı Kerim · ${reciter.style}`,
     categoryId: 'kuran',
     language: 'Arapça',
     genre: "Kur'an Tilaveti",
@@ -209,7 +216,7 @@ export function buildSurahMediaItem(surah: SurahInfo, reciter: Reciter): MediaIt
     licenseName: reciter.licenseName,
     bitrateKbps: reciter.bitrateKbps,
     format: 'MP3',
-    motif: 'quran',
+    motif: 'kuran',
     surahNumber: surah.number,
     reciterId: reciter.id,
   };
@@ -225,4 +232,41 @@ export function getProxiedAudioUrl(rawUrl: string): string {
     return rawUrl;
   }
   return `/api/audio/proxy?url=${encodeURIComponent(rawUrl)}`;
+}
+
+export function getFallbackStreamUrl(item: MediaItem): string | null {
+  if (!item.surahNumber || !item.reciterId || item.ayahNumber) return null;
+  const reciter = RECITERS.find((r) => r.id === item.reciterId);
+  if (!reciter?.fallbackBaseUrl) return null;
+  return `${reciter.fallbackBaseUrl}/${pad3(item.surahNumber)}.mp3`;
+}
+
+export function normalizeMotif(motif: string | undefined): MediaItem['motif'] {
+  if (!motif) return 'custom';
+  if (motif === 'quran') return 'kuran';
+  if (motif === 'studio') return 'custom';
+  return motif as MediaItem['motif'];
+}
+
+/**
+ * Heals stale cached MediaItems from older localStorage sessions:
+ * - Refreshes Quran surah streamUrl to the latest verified CDN URL
+ * - Migrates legacy motif strings ('quran' -> 'kuran', 'studio' -> 'custom')
+ */
+export function healMediaItem(item: MediaItem): MediaItem {
+  const motif = normalizeMotif(item.motif as unknown as string);
+  if (item.surahNumber && item.reciterId && !item.ayahNumber) {
+    const reciter = RECITERS.find((r) => r.id === item.reciterId);
+    if (reciter) {
+      return {
+        ...item,
+        motif: 'kuran',
+        streamUrl: `${reciter.surahBaseUrl}/${pad3(item.surahNumber)}.mp3`,
+      };
+    }
+  }
+  if (motif !== item.motif) {
+    return { ...item, motif };
+  }
+  return item;
 }

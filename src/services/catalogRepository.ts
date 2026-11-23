@@ -1,4 +1,4 @@
-import { AyahItem, CatalogProviderStatus, MediaItem, MusicCategory, Reciter } from '../types/media';
+import { AyahItem, CatalogProviderStatus, CuratedPlaylist, MediaItem, MusicCategory, Reciter } from '../types/media';
 import { RECITERS, SURAHS, buildAyahAudioUrl, buildSurahMediaItem } from '../data/quranData';
 
 // Turkish & Arabic accent-insensitive search normalizer
@@ -13,18 +13,11 @@ export function normalizeSearchText(input: string): string {
     .replace(/[ğ]/g, 'g')
     .replace(/[ş]/g, 's')
     .replace(/['’‘`]/g, '')
-    // Strip Arabic Tashkeel (diacritics) for clean Arabic matching
     .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
     .replace(/[أإآ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
     .trim();
-}
-
-export interface MediaCatalogRepository {
-  readonly providerId: string;
-  getCategoryTracks(category: MusicCategory): Promise<{ tracks: MediaItem[]; notice?: string }>;
-  searchTracks(query: string, category?: MusicCategory): Promise<{ tracks: MediaItem[]; notice?: string }>;
 }
 
 export class QuranCatalogRepository {
@@ -43,73 +36,105 @@ export class QuranCatalogRepository {
 
   async fetchSurahAyahsWithMeal(surahNumber: number, reciterId: string): Promise<{ ayahs: AyahItem[]; source: string }> {
     const reciter = this.getReciterById(reciterId);
-    // Versioned query bypasses old PWA CacheFirst entries that stored index.html as API data.
-    const apiUrl = `/api/quran/surah/${surahNumber}?v=3`;
-    let res = await fetch(apiUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
-    let contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      // A stale service worker can intercept the first request. Retry with a unique URL.
-      res = await fetch(`${apiUrl}&retry=${Date.now()}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
-      contentType = res.headers.get('content-type') || '';
-    }
-    if (!contentType.includes('application/json')) {
-      throw new Error('Kur’an verisi yerine web sayfası geldi. Uygulamanın önbelleğini yenileyin.');
+    const res = await fetch(`/api/quran/surah/${surahNumber}`);
+    if (!res.ok) {
+      throw new Error("Sure meali şu anda yüklenemedi. İnternet bağlantınızı kontrol edin.");
     }
     const json = (await res.json()) as {
-      source?: string;
-      error?: string;
-      ayahs?: Array<{ numberInSurah: number; globalNumber: number; arabicText: string; turkishMeal: string }>;
+      source: string;
+      ayahs: Array<{ numberInSurah: number; globalNumber: number; arabicText: string; turkishMeal: string }>;
     };
-    if (!res.ok || !Array.isArray(json.ayahs) || json.ayahs.length === 0) {
-      throw new Error(json.error || 'Sure metni yüklenemedi. Lütfen yeniden deneyin.');
-    }
     const ayahs: AyahItem[] = json.ayahs.map((a) => ({
       ...a,
       audioUrl: buildAyahAudioUrl(reciter, surahNumber, a.numberInSurah),
     }));
-    return { ayahs, source: json.source || "Kur’an metni" };
+    return { ayahs, source: json.source };
   }
 }
 
-export class OpenMusicCatalogRepository implements MediaCatalogRepository {
-  readonly providerId = 'open_licensed_catalog';
-  private memoryCache = new Map<string, { tracks: MediaItem[]; notice?: string }>();
+export interface DbCategoriesPayload {
+  categories: MusicCategory[];
+  playlistsSummary: Array<{
+    id: string;
+    categoryId: string;
+    categoryName: string;
+    title: string;
+    subtitle: string;
+    description: string;
+    motif: MusicCategory['motif'];
+    trackCount: number;
+  }>;
+}
 
-  async getCategoryTracks(category: MusicCategory): Promise<{ tracks: MediaItem[]; notice?: string }> {
-    if (category.isQuran) {
-      return { tracks: quranRepository.getSurahTracksForReciter(RECITERS[0].id) };
+export class DatabaseCatalogRepository {
+  async fetchCategoriesAndPlaylists(): Promise<DbCategoriesPayload | null> {
+    try {
+      const res = await fetch('/api/db/categories');
+      if (!res.ok) return null;
+      return (await res.json()) as DbCategoriesPayload;
+    } catch {
+      return null;
     }
-    if (this.memoryCache.has(category.id)) {
-      return this.memoryCache.get(category.id)!;
+  }
+
+  async createCategory(name: string, subtitle: string, language: string, genre: string): Promise<MusicCategory | null> {
+    try {
+      const res = await fetch('/api/db/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, subtitle, language, genre }),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { category: MusicCategory };
+      return data.category;
+    } catch {
+      return null;
     }
-    const params = new URLSearchParams({
-      q: category.archiveQuery || category.name,
-      categoryId: category.id,
-      language: category.language,
-      genre: category.genre,
-      motif: category.motif,
-    });
-    const res = await fetch(`/api/catalog/open-music?${params.toString()}`, { headers: { Accept: 'application/json' } });
+  }
+
+  async getCategoryPlaylistsAndTracks(
+    categoryId: string,
+    forceRefresh = false
+  ): Promise<{ playlists: CuratedPlaylist[]; tracks: MediaItem[]; notice?: string }> {
+    const qs = forceRefresh ? '?refresh=1' : '';
+    const res = await fetch(`/api/db/categories/${encodeURIComponent(categoryId)}/playlists${qs}`);
     if (!res.ok) {
       return {
+        playlists: [],
         tracks: [],
-        notice: 'Açık lisanslı katalog bağlantısı şu an kurulamadı. Yerel ses dosyalarınızı ekleyebilirsiniz.',
+        notice: 'Veritabanı listelerine şu an ulaşılamıyor. Telefonunuzdan ses dosyası yükleyebilirsiniz.',
       };
     }
-    const data = (await res.json()) as { tracks: MediaItem[]; notice?: string };
-    const result = { tracks: data.tracks ?? [], notice: data.notice };
-    this.memoryCache.set(category.id, result);
-    return result;
+    const data = (await res.json()) as {
+      playlists?: CuratedPlaylist[];
+      tracks?: MediaItem[];
+      notice?: string;
+    };
+    return {
+      playlists: data.playlists ?? [],
+      tracks: data.tracks ?? [],
+      notice: data.notice,
+    };
+  }
+
+  async fetchAllCachedTracks(): Promise<MediaItem[]> {
+    try {
+      const res = await fetch('/api/db/tracks');
+      if (!res.ok) return [];
+      const data = (await res.json()) as { tracks?: MediaItem[] };
+      return data.tracks ?? [];
+    } catch {
+      return [];
+    }
   }
 
   async searchTracks(query: string, category?: MusicCategory): Promise<{ tracks: MediaItem[]; notice?: string }> {
     const params = new URLSearchParams({
       q: query,
-      categoryId: category?.id ?? 'nostalji',
+      categoryId: category?.id ?? 'turkuler',
       language: category?.language ?? 'Türkçe',
-      genre: category?.genre ?? 'Açık Arşiv',
-      motif: category?.motif ?? 'studio',
-      searchMode: '1',
+      genre: category?.genre ?? 'Müzik',
+      motif: category?.motif ?? 'turkuler',
     });
     const res = await fetch(`/api/catalog/open-music?${params.toString()}`);
     if (!res.ok) {
@@ -127,6 +152,7 @@ export async function fetchCatalogProviderStatus(): Promise<CatalogProviderStatu
     return (await res.json()) as CatalogProviderStatus;
   } catch {
     return {
+      databaseConnected: false,
       quranApiConnected: true,
       internetArchiveConnected: false,
       jamendoConfigured: false,
@@ -136,4 +162,4 @@ export async function fetchCatalogProviderStatus(): Promise<CatalogProviderStatu
 }
 
 export const quranRepository = new QuranCatalogRepository();
-export const openMusicRepository = new OpenMusicCatalogRepository();
+export const openMusicRepository = new DatabaseCatalogRepository();

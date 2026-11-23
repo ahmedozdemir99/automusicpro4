@@ -194,9 +194,9 @@ const AppShell: React.FC = () => {
           <button
             type="button"
             onClick={() => setCarMode(true)}
-            className="w-full py-3 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
+            className="w-full h-11 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
           >
-            <Car className="w-4 h-4" />
+            <Car className="w-4 h-4 shrink-0" />
             Araba Modu
           </button>
         </div>
@@ -220,9 +220,9 @@ const AppShell: React.FC = () => {
             <button
               type="button"
               onClick={() => setCarMode(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37] text-[#09090B] text-xs font-semibold whitespace-nowrap shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-xs font-semibold whitespace-nowrap shrink-0 transition-colors"
             >
-              <Car className="w-3.5 h-3.5" />
+              <Car className="w-3.5 h-3.5 shrink-0" />
               Araba Modu
             </button>
           </div>

@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   Heart,
   Layers,
+  ListMusic,
   Loader2,
   Play,
   Plus,
@@ -77,59 +78,57 @@ export const CategoriesScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#F5F2EB]">Müzik Kategorileri</h1>
           <p className="text-sm text-[#9B978E] mt-1">
-            {categories.length} ayrı kategori · İleride yeni kategoriler kolayca eklenebilir
+            {categories.length} ayrı kategori · Her kategoriye özel simge ve hazır veritabanı listeleri
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => {
               setMultiSelectMode((v) => !v);
               setSelectedIds([]);
             }}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap ${
+            className={`inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap ${
               multiSelectMode
                 ? 'bg-[#D4AF37] text-[#09090B] border-[#D4AF37]'
                 : 'bg-[#141418] text-[#F5F2EB] border-white/10 hover:border-[#D4AF37]/40'
             }`}
           >
-            <Layers className="w-4 h-4" />
-            {multiSelectMode ? 'Çoklu Seçimi İptal Et' : 'Ortak Liste İçin Kategori Seç'}
+            <Layers className="w-4 h-4 shrink-0" />
+            {multiSelectMode ? 'Seçimi İptal Et' : 'Ortak Liste Seç'}
           </button>
 
           <button
             type="button"
             onClick={() => setShowAddForm((v) => !v)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-white/10 text-xs font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-white/10 text-xs font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
           >
-            <Plus className="w-4 h-4 text-[#D4AF37]" />
-            Yeni Kategori Ekle
+            <Plus className="w-4 h-4 text-[#D4AF37] shrink-0" />
+            Yeni Kategori
           </button>
         </div>
       </div>
 
       {multiSelectMode && (
-        <div className="p-4 rounded-2xl bg-[#17150F] border border-[#D4AF37]/30 flex flex-wrap items-center justify-between gap-4">
+        <div className="p-4 rounded-2xl bg-[#17150F] border border-[#D4AF37]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="text-sm text-[#F5F2EB]">
             <span className="font-mono tabular-nums font-semibold text-[#D4AF37]">{selectedIds.length}</span>{' '}
             kategori seçildi. Birden fazla kategori seçerek ortak çalma listesi oluşturabilirsiniz.
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={selectedIds.length < 2 || buildingCombined}
-              onClick={() => void handleCreateCombinedPlaylist()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D4AF37] disabled:opacity-40 text-[#09090B] text-xs font-semibold whitespace-nowrap"
-            >
-              {buildingCombined && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Ortak Çalma Listesi Oluştur
-            </button>
-          </div>
+          <button
+            type="button"
+            disabled={selectedIds.length < 2 || buildingCombined}
+            onClick={() => void handleCreateCombinedPlaylist()}
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#D4AF37] disabled:opacity-40 text-[#09090B] text-xs font-semibold whitespace-nowrap shrink-0"
+          >
+            {buildingCombined && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Ortak Çalma Listesi Oluştur
+          </button>
         </div>
       )}
 
@@ -138,7 +137,7 @@ export const CategoriesScreen: React.FC = () => {
           onSubmit={handleAddCategory}
           className="p-5 rounded-2xl bg-[#121216] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
         >
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <label className="text-xs text-[#9B978E]">Kategori Adı</label>
             <input
               type="text"
@@ -146,31 +145,31 @@ export const CategoriesScreen: React.FC = () => {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Örn: Klasik Enstrümantal"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0E] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
+              className="w-full h-11 px-3.5 rounded-xl bg-[#0B0B0E] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <label className="text-xs text-[#9B978E]">Açıklama</label>
             <input
               type="text"
               value={newSubtitle}
               onChange={(e) => setNewSubtitle(e.target.value)}
               placeholder="Kısa kategori açıklaması"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0E] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
+              className="w-full h-11 px-3.5 rounded-xl bg-[#0B0B0E] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <label className="text-xs text-[#9B978E]">Dil</label>
             <input
               type="text"
               value={newLanguage}
               onChange={(e) => setNewLanguage(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0E] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
+              className="w-full h-11 px-3.5 rounded-xl bg-[#0B0B0E] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
           <button
             type="submit"
-            className="h-[42px] px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold"
+            className="h-11 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold transition-colors"
           >
             Kategoriyi Kaydet
           </button>
@@ -193,13 +192,13 @@ export const CategoriesScreen: React.FC = () => {
                   navigate({ name: 'track_list', categoryId: cat.id, title: cat.name });
                 }
               }}
-              className={`group p-4 rounded-2xl border text-left transition-colors flex items-center gap-4 ${
+              className={`group h-full p-4 rounded-2xl border text-left transition-colors flex items-center gap-4 ${
                 isSelected
                   ? 'bg-[#1D1A10] border-[#D4AF37]'
                   : 'bg-[#121216] hover:bg-[#19181F] border-white/[0.06] hover:border-[#D4AF37]/30'
               }`}
             >
-              <ArtworkCover motif={cat.motif} categoryId={cat.id} title={cat.name} size="md" />
+              <ArtworkCover motif={cat.motif} size="md" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-mono tabular-nums text-[#D4AF37]">
@@ -214,7 +213,7 @@ export const CategoriesScreen: React.FC = () => {
                       {isSelected && <Check className="w-3.5 h-3.5" />}
                     </span>
                   ) : (
-                    <span className="text-[11px] text-[#7C7970]">{cat.language}</span>
+                    <span className="text-[11px] text-[#7C7970] truncate">{cat.language}</span>
                   )}
                 </div>
                 <p className="text-base font-semibold text-[#F5F2EB] truncate mt-0.5">{cat.name}</p>
@@ -248,12 +247,12 @@ export const ArtistsScreen: React.FC = () => {
         language: 'Arapça',
         genre: "Kur'an Tilaveti",
         trackCount: 114,
-        motif: 'quran',
+        motif: 'kuran',
         isReciter: true,
       });
     }
 
-    // Aggregate loaded open-catalog & local archive tracks by artist
+    // Aggregate database & local archive tracks by artist
     for (const tracks of Object.values(catalogTracksByCategory)) {
       for (const t of tracks) {
         const existing = map.get(t.artistId);
@@ -294,18 +293,18 @@ export const ArtistsScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#F5F2EB]">Sanatçılar ve Kariler</h1>
           <p className="text-sm text-[#9B978E] mt-1">
             Bir sanatçı seçerek tüm kayıtlarını sıralı veya karışık dinleyebilirsiniz
           </p>
         </div>
-        <div className="flex items-center gap-1 p-1 bg-[#141418] border border-white/[0.08] rounded-xl">
+        <div className="inline-flex items-center gap-1 p-1 bg-[#141418] border border-white/[0.08] rounded-xl self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setOnlyFavorites(false)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`h-8 px-3.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               !onlyFavorites ? 'bg-[#D4AF37] text-[#09090B]' : 'text-[#A19E95] hover:text-[#F5F2EB]'
             }`}
           >
@@ -314,7 +313,7 @@ export const ArtistsScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setOnlyFavorites(true)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`h-8 px-3.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               onlyFavorites ? 'bg-[#D4AF37] text-[#09090B]' : 'text-[#A19E95] hover:text-[#F5F2EB]'
             }`}
           >
@@ -330,7 +329,7 @@ export const ArtistsScreen: React.FC = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Sanatçı veya kari adına göre ara..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] placeholder:text-[#7C7970] focus:border-[#D4AF37] focus:outline-none"
+          className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] placeholder:text-[#7C7970] focus:border-[#D4AF37] focus:outline-none"
         />
       </div>
 
@@ -359,8 +358,8 @@ export const ArtistsScreen: React.FC = () => {
                 type="button"
                 onClick={() => toggleFavoriteArtist(artist.id)}
                 aria-label="Sanatçıyı favorilere ekle"
-                className={`min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg ${
-                  isFav ? 'text-[#D4AF37]' : 'text-[#8C887F] hover:text-[#F5F2EB]'
+                className={`w-10 h-10 flex items-center justify-center rounded-xl shrink-0 transition-colors ${
+                  isFav ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-[#8C887F] hover:text-[#F5F2EB] hover:bg-white/[0.05]'
                 }`}
               >
                 <Heart className={`w-4 h-4 ${isFav ? 'fill-[#D4AF37]' : ''}`} />
@@ -390,7 +389,7 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
   }, [artistId, catalogTracksByCategory, reciter]);
 
   const artistName = reciter?.nameTr ?? tracks[0]?.artistName ?? 'Sanatçı';
-  const motif = reciter ? 'quran' : tracks[0]?.motif ?? 'studio';
+  const motif = reciter ? 'kuran' : tracks[0]?.motif ?? 'custom';
   const isFav = favoriteArtistIds.includes(artistId);
 
   return (
@@ -398,7 +397,7 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
       <button
         type="button"
         onClick={goBack}
-        className="inline-flex items-center gap-1.5 text-sm text-[#A19E95] hover:text-[#F5F2EB]"
+        className="inline-flex items-center gap-1.5 h-9 px-2 -ml-2 rounded-lg text-sm text-[#A19E95] hover:text-[#F5F2EB] transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
         Geri
@@ -406,35 +405,37 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
 
       <div className="p-6 rounded-3xl bg-[#121216] border border-white/[0.07] flex flex-col sm:flex-row items-start sm:items-center gap-6">
         <ArtworkCover motif={motif} arabicTitle={reciter?.nameAr} size="lg" />
-        <div className="space-y-3 flex-1">
+        <div className="space-y-3 flex-1 min-w-0">
           <p className="text-xs text-[#D4AF37]">{reciter ? "Kur'an-ı Kerim Karisi" : 'Sanatçı'}</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#F5F2EB]">{artistName}</h1>
           <p className="text-sm text-[#9B978E]">
             {tracks.length} kayıt{reciter ? ` · ${reciter.style} · ${reciter.country}` : ''}
           </p>
-          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-stretch sm:items-center gap-2.5 pt-1">
             <button
               type="button"
+              disabled={tracks.length === 0}
               onClick={() => void playQueue(tracks, false)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-40 text-[#09090B] text-sm font-semibold transition-colors whitespace-nowrap"
             >
-              <Play className="w-4 h-4 fill-current" />
+              <Play className="w-4 h-4 fill-current shrink-0" />
               Sıralı Çal
             </button>
             <button
               type="button"
+              disabled={tracks.length === 0}
               onClick={() => void playQueue(tracks, true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-sm font-medium text-[#F5F2EB]"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] disabled:opacity-40 border border-white/10 text-sm font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
             >
-              <Shuffle className="w-4 h-4 text-[#D4AF37]" />
+              <Shuffle className="w-4 h-4 text-[#D4AF37] shrink-0" />
               Karışık Çal
             </button>
             <button
               type="button"
               onClick={() => toggleFavoriteArtist(artistId)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-sm font-medium text-[#F5F2EB]"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-sm font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
             >
-              <Heart className={`w-4 h-4 ${isFav ? 'text-[#D4AF37] fill-[#D4AF37]' : 'text-[#9B978E]'}`} />
+              <Heart className={`w-4 h-4 shrink-0 ${isFav ? 'text-[#D4AF37] fill-[#D4AF37]' : 'text-[#9B978E]'}`} />
               {isFav ? 'Favori Sanatçı' : 'Favorilere Ekle'}
             </button>
           </div>
@@ -466,99 +467,13 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
 };
 
 // ============================================================
-// Screen 5: Şarkı Listesi (Category Track List + Filters + Real Open Catalog + Local Upload)
+// Screen 5: Şarkı Listesi (Spotify-style DB Playlists + Filters + Phone Upload)
 // ============================================================
-
-
-// Only embed a user-provided YouTube video ID through YouTube's official player.
-// No stream extraction, audio-only background playback or hidden player.
-const getYouTubeVideoId = (raw: string): string | null => {
-  try {
-    const u = new URL(raw.trim());
-    const host = u.hostname.toLowerCase();
-    let id: string | null = null;
-    if (host === 'youtu.be' || host === 'www.youtu.be') id = u.pathname.split('/')[1];
-    else if (['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com'].includes(host)) {
-      if (u.pathname === '/watch') id = u.searchParams.get('v');
-      else if (u.pathname.startsWith('/shorts/') || u.pathname.startsWith('/embed/')) id = u.pathname.split('/')[2];
-    }
-    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
-  } catch { return null; }
-};
-const EmbeddedYouTubePlayer: React.FC = () => {
-  const [link, setLink] = useState('');
-  const [videoId, setVideoId] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const openVideo = () => {
-    const id = getYouTubeVideoId(link);
-    if (!id) { setError('Geçerli bir YouTube video bağlantısı girin.'); return; }
-    setError(''); setVideoId(id);
-  };
-  return <section className="rounded-2xl border border-white/10 bg-[#121216] p-4 sm:p-6 space-y-3">
-    <h2 className="text-lg font-semibold text-[#F5F2EB]">Uygulama içi YouTube oynatıcı</h2>
-    <p className="text-xs text-[#9B978E]">Sanatçının resmî YouTube videosunun bağlantısını yapıştırın. Video, izin veriliyorsa uygulamadan ayrılmadan açılır. YouTube oynatıcı kuralları geçerlidir.</p>
-    <form className="flex flex-col sm:flex-row gap-2" onSubmit={e => {e.preventDefault();openVideo();}}>
-      <input type="url" aria-label="YouTube video bağlantısı" placeholder="https://www.youtube.com/watch?v=..." value={link} onChange={e=>setLink(e.target.value)}
-        className="flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-[#09090B] border border-white/15 text-[#F5F2EB] text-sm" />
-      <button type="submit" className="px-4 py-2.5 rounded-lg bg-[#D4AF37] text-[#09090B] text-sm font-semibold">Uygulamada oynat</button>
-    </form>
-    {error && <p role="alert" className="text-xs text-amber-400">{error}</p>}
-    {videoId && <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
-      <iframe key={videoId} src={`https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1`}
-        title="YouTube video oynatıcı" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        referrerPolicy="strict-origin-when-cross-origin" allowFullScreen className="w-full h-full border-0" />
-    </div>}
-  </section>;
-};
-
-type VerifiedAlbum = { id: string; title: string; year: string; artist: string; coverUrl: string; sourceUrl: string };
-const VerifiedCatalog: React.FC<{ categoryId: string }> = ({ categoryId }) => {
-  const [artists, setArtists] = useState<string[]>([]);
-  const [selected, setSelected] = useState('');
-  const [albums, setAlbums] = useState<VerifiedAlbum[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState('');
-  useEffect(() => {
-    setSelected(''); setAlbums([]); setArtists([]); setNotice('');
-    if (!['arabesk','turk_pop','nostalji','turkuler','karadeniz'].includes(categoryId)) return;
-    let active = true;
-    fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId))
-      .then(r => r.json()).then(d => { if (active) setArtists(d.artists || []); })
-      .catch(() => { if (active) setNotice('Sanatçı listesi yüklenemedi.'); });
-    return () => { active = false; };
-  }, [categoryId]);
-  const loadArtist = async (name: string) => {
-    setSelected(name); setAlbums([]); setLoading(true); setNotice('');
-    try {
-      const res = await fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId)+'&artist='+encodeURIComponent(name));
-      const data = await res.json();
-      setAlbums(data.albums || []);
-      setNotice(data.notice || '');
-    } catch { setNotice('Albüm bilgileri yüklenemedi.'); }
-    finally { setLoading(false); }
-  };
-  if (!['arabesk','turk_pop','nostalji','turkuler','karadeniz'].includes(categoryId)) return null;
-  return <section className="rounded-2xl border border-[#D4AF37]/20 bg-[#121216] p-4 sm:p-6 space-y-4">
-    <div><h2 className="text-lg font-semibold text-[#F5F2EB]">Doğrulanmış sanatçı ve albüm kataloğu</h2>
-      <p className="text-xs text-[#9B978E] mt-1">MusicBrainz albüm bilgileri · Dinleme hakkı olmayan eserler çalınabilir gösterilmez.</p></div>
-    <div className="flex flex-wrap gap-2">{artists.map(name => <button key={name} type="button" onClick={() => void loadArtist(name)}
-      className={`px-3 py-2 rounded-lg text-xs border ${selected===name?'bg-[#D4AF37] text-[#09090B] border-[#D4AF37]':'text-[#F5F2EB] border-white/15 hover:border-[#D4AF37]'}`}>{name}</button>)}</div>
-    {loading && <p className="text-sm text-[#D4AF37]">Albümler yükleniyor…</p>}
-    {notice && selected && <p className="text-xs text-[#9B978E]">{notice}</p>}
-    {selected && !loading && <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      {albums.map(a => <a key={a.id} href={a.sourceUrl} target="_blank" rel="noopener noreferrer" className="min-w-0 rounded-xl border border-white/10 overflow-hidden hover:border-[#D4AF37]/50">
-        <img src={a.coverUrl} alt={a.title+' albüm kapağı'} loading="lazy" className="w-full aspect-square object-cover bg-[#201910]" onError={e=>{e.currentTarget.style.visibility='hidden';}} />
-        <div className="p-2"><p className="text-xs font-medium text-[#F5F2EB] line-clamp-2">{a.title}</p><p className="text-[11px] text-[#9B978E]">{a.year||'Yıl bilinmiyor'} · Albüm bilgisi</p></div>
-      </a>)}
-    </div>}
-    {selected && !loading && albums.length===0 && <p className="text-xs text-[#9B978E]">Bu sanatçı için doğrulanmış albüm sonucu bulunamadı.</p>}
-  </section>;
-};
-
 export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> = ({ categoryId, title }) => {
   const {
     categories,
     catalogTracksByCategory,
+    curatedPlaylistsByCategory,
     catalogNotices,
     loadingCategories,
     loadCategoryTracks,
@@ -570,38 +485,39 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [filterText, setFilterText] = useState('');
   const [artistFilter, setArtistFilter] = useState('all');
-  const [albumFilter, setAlbumFilter] = useState('all');
   const [formatFilter, setFormatFilter] = useState('all');
+  const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null);
 
   const category = categories.find((c) => c.id === categoryId);
-  const tracks = categoryId ? catalogTracksByCategory[categoryId] ?? [] : [];
+  const allTracks = categoryId ? catalogTracksByCategory[categoryId] ?? [] : [];
+  const curatedPlaylists = categoryId ? curatedPlaylistsByCategory[categoryId] ?? [] : [];
   const isLoading = categoryId ? Boolean(loadingCategories[categoryId]) : false;
   const notice = categoryId ? catalogNotices[categoryId] : undefined;
 
   useEffect(() => {
-    if (categoryId && tracks.length === 0 && !isLoading) {
-      void loadCategoryTracks(categoryId);
+    setActivePlaylistId(null);
+    setArtistFilter('all');
+    setFormatFilter('all');
+    setFilterText('');
+    if (categoryId && (!curatedPlaylistsByCategory[categoryId] || allTracks.length === 0)) {
+      void loadCategoryTracks(categoryId, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId]);
 
+  const activeCuratedPlaylist = curatedPlaylists.find((p) => p.id === activePlaylistId) ?? null;
+  const sourceTracks = activeCuratedPlaylist ? activeCuratedPlaylist.tracks : allTracks;
+
   const artistOptions = useMemo(() => {
     const set = new Set<string>();
-    tracks.forEach((t) => set.add(t.artistName));
+    sourceTracks.forEach((t) => set.add(t.artistName));
     return Array.from(set).sort();
-  }, [tracks]);
-
-  const albumOptions = useMemo(() => Array.from(new Set(tracks
-    .filter(t => artistFilter === 'all' || t.artistName === artistFilter)
-    .map(t => t.album).filter(Boolean))).sort(), [tracks, artistFilter]);
-
-  useEffect(() => setAlbumFilter('all'), [artistFilter, categoryId]);
+  }, [sourceTracks]);
 
   const filteredTracks = useMemo(() => {
     const norm = normalizeSearchText(filterText);
-    return tracks.filter((t) => {
+    return sourceTracks.filter((t) => {
       if (artistFilter !== 'all' && t.artistName !== artistFilter) return false;
-      if (albumFilter !== 'all' && t.album !== albumFilter) return false;
       if (formatFilter !== 'all' && t.format !== formatFilter) return false;
       if (!norm) return true;
       return (
@@ -610,7 +526,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         normalizeSearchText(t.album).includes(norm)
       );
     });
-  }, [artistFilter, albumFilter, filterText, formatFilter, tracks]);
+  }, [artistFilter, filterText, formatFilter, sourceTracks]);
 
   return (
     <div className="space-y-6 pb-10">
@@ -618,7 +534,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         <button
           type="button"
           onClick={goBack}
-          className="inline-flex items-center gap-1.5 text-sm text-[#A19E95] hover:text-[#F5F2EB]"
+          className="inline-flex items-center gap-1.5 h-9 px-2 -ml-2 rounded-lg text-sm text-[#A19E95] hover:text-[#F5F2EB] transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           Kategoriler
@@ -627,42 +543,42 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         {categoryId && (
           <button
             type="button"
-            onClick={() => void loadCategoryTracks(categoryId)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#141418] border border-white/10 text-xs text-[#CFCBC2] hover:text-[#D4AF37]"
+            onClick={() => void loadCategoryTracks(categoryId, true)}
+            className="inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-white/10 text-xs font-medium text-[#CFCBC2] hover:text-[#D4AF37] transition-colors whitespace-nowrap"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            Açık Kataloğu Yenile
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isLoading ? 'animate-spin' : ''}`} />
+            Listeyi Yenile
           </button>
         )}
       </div>
 
       {/* Category Header */}
       <div className="p-6 rounded-3xl bg-[#121216] border border-white/[0.07] flex flex-col sm:flex-row items-start sm:items-center gap-6">
-        <ArtworkCover motif={category?.motif ?? 'studio'} categoryId={categoryId} title={title} size="lg" />
-        <div className="space-y-3 flex-1">
-          <p className="text-xs text-[#D4AF37]">
-            {category ? `${category.language} · ${category.genre}` : 'Müzik Listesi'}
+        <ArtworkCover motif={category?.motif ?? 'custom'} size="lg" />
+        <div className="space-y-3 flex-1 min-w-0">
+          <p className="text-xs font-medium text-[#D4AF37]">
+            {category ? `${category.language} · ${category.genre}` : 'Müzik Listesi'} · {allTracks.length} kayıt
           </p>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#F5F2EB]">{title}</h1>
           {category && <p className="text-sm text-[#9B978E]">{category.subtitle}</p>}
 
-          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-stretch sm:items-center gap-2.5 pt-1">
             <button
               type="button"
               disabled={filteredTracks.length === 0}
               onClick={() => void playQueue(filteredTracks, false)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#D4AF37] disabled:opacity-40 hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#D4AF37] disabled:opacity-40 hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold transition-colors whitespace-nowrap"
             >
-              <Play className="w-4 h-4 fill-current" />
+              <Play className="w-4 h-4 fill-current shrink-0" />
               Sıralı Çal
             </button>
             <button
               type="button"
               disabled={filteredTracks.length === 0}
               onClick={() => void playQueue(filteredTracks, true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] disabled:opacity-40 hover:bg-white/[0.1] border border-white/10 text-sm font-medium text-[#F5F2EB]"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white/[0.05] disabled:opacity-40 hover:bg-white/[0.1] border border-white/10 text-sm font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
             >
-              <Shuffle className="w-4 h-4 text-[#D4AF37]" />
+              <Shuffle className="w-4 h-4 text-[#D4AF37] shrink-0" />
               Karışık Çal
             </button>
 
@@ -682,20 +598,88 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-sm font-medium text-[#F5F2EB]"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-sm font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
             >
-              <Upload className="w-4 h-4 text-[#D4AF37]" />
-              Cihazdan Ses Ekle (MP3/FLAC)
+              <Upload className="w-4 h-4 text-[#D4AF37] shrink-0" />
+              Telefondan Ses Yükle
             </button>
           </div>
         </div>
       </div>
 
-      {categoryId && categoryId !== 'kuran' && <EmbeddedYouTubePlayer key={'yt-'+categoryId} />}
-      {categoryId && <VerifiedCatalog key={categoryId} categoryId={categoryId} />}
+      {/* Spotify-style Curated Database Playlists for this Category */}
+      {curatedPlaylists.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-base font-semibold text-[#F5F2EB] inline-flex items-center gap-2">
+              <ListMusic className="w-4 h-4 text-[#D4AF37]" />
+              Hazır Kategori Çalma Listeleri
+            </h2>
+            {activePlaylistId && (
+              <button
+                type="button"
+                onClick={() => setActivePlaylistId(null)}
+                className="text-xs font-medium text-[#D4AF37] hover:underline whitespace-nowrap"
+              >
+                Tüm Parçaları Göster
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {curatedPlaylists.map((pl) => {
+              const isSelected = activePlaylistId === pl.id;
+              return (
+                <div
+                  key={pl.id}
+                  className={`p-4 rounded-2xl border transition-colors flex items-center justify-between gap-3.5 ${
+                    isSelected
+                      ? 'bg-[#1B1810] border-[#D4AF37]/60'
+                      : 'bg-[#121216] border-white/[0.06] hover:border-[#D4AF37]/30'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setActivePlaylistId(isSelected ? null : pl.id)}
+                    className="flex items-center gap-3.5 min-w-0 text-left flex-1"
+                  >
+                    <ArtworkCover motif={pl.motif} size="sm" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#F5F2EB] truncate">{pl.title}</p>
+                      <p className="text-xs text-[#D4AF37]/85 truncate mt-0.5">{pl.subtitle}</p>
+                      <p className="text-[11px] text-[#8C887F] truncate mt-0.5">
+                        {pl.tracks.length} kayıt · {pl.description}
+                      </p>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      disabled={pl.tracks.length === 0}
+                      onClick={() => void playQueue(pl.tracks, false)}
+                      aria-label={`${pl.title} listesini oynat`}
+                      className="w-10 h-10 rounded-full bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-40 text-[#09090B] flex items-center justify-center transition-transform active:scale-95"
+                    >
+                      <Play className="w-4 h-4 fill-current ml-0.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pl.tracks.length === 0}
+                      onClick={() => void playQueue(pl.tracks, true)}
+                      aria-label={`${pl.title} karışık oynat`}
+                      className="w-10 h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] disabled:opacity-40 text-[#F5F2EB] flex items-center justify-center transition-colors"
+                    >
+                      <Shuffle className="w-4 h-4 text-[#D4AF37]" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
-      {/* Filters Row (Sanatçı, Albüm, Format) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Filters Row (Sanatçı, Albüm, Format — Uniform h-11 Height) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="relative">
           <Search className="w-4 h-4 text-[#8C887F] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -703,14 +687,14 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             placeholder="Şarkı, sanatçı veya albüm filtrele..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] placeholder:text-[#7C7970] focus:border-[#D4AF37] focus:outline-none"
+            className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] placeholder:text-[#7C7970] focus:border-[#D4AF37] focus:outline-none"
           />
         </div>
         <select
           value={artistFilter}
           onChange={(e) => setArtistFilter(e.target.value)}
           aria-label="Sanatçıya göre filtrele"
-          className="px-3.5 py-2.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
+          className="h-11 px-3.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
         >
           <option value="all">Tüm Sanatçılar ({artistOptions.length})</option>
           {artistOptions.map((a) => (
@@ -720,19 +704,10 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
           ))}
         </select>
         <select
-          value={albumFilter}
-          onChange={(e) => setAlbumFilter(e.target.value)}
-          aria-label="Albüme göre filtrele"
-          className="px-3.5 py-2.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
-        >
-          <option value="all">Tüm Albümler ({albumOptions.length})</option>
-          {albumOptions.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>
-        <select
           value={formatFilter}
           onChange={(e) => setFormatFilter(e.target.value)}
           aria-label="Ses formatına göre filtrele"
-          className="px-3.5 py-2.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
+          className="h-11 px-3.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
         >
           <option value="all">Tüm Formatlar (MP3 / AAC / FLAC / OGG)</option>
           <option value="MP3">MP3</option>
@@ -742,36 +717,28 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         </select>
       </div>
 
-      {filteredTracks.length > 0 && !isLoading && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[#A19E95]">
-          <span className="text-[#D4AF37] font-semibold">{filteredTracks.length} eser</span>
-          <span>· {new Set(filteredTracks.map(t => t.artistId)).size} sanatçı</span>
-          <span>· {new Set(filteredTracks.map(t => t.album)).size} albüm</span>
-          <span>· Lisans bilgileri kaynak kayıtlarından alınır</span>
-        </div>
-      )}
-      {/* Track List or Transparent Provider Notice */}
+      {/* Track List or Transparent Upload Fallback */}
       {isLoading ? (
         <div className="p-12 rounded-2xl bg-[#121216] border border-white/[0.06] flex flex-col items-center justify-center gap-3 text-center">
           <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
-          <p className="text-sm text-[#9B978E]">Açık lisanslı ses kataloğu taranıyor...</p>
+          <p className="text-sm text-[#9B978E]">Veritabanı listeleri ve kayıtlar yükleniyor...</p>
         </div>
       ) : filteredTracks.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-[#121216] border border-white/[0.06] space-y-3">
+        <div className="p-8 rounded-2xl bg-[#121216] border border-white/[0.06] space-y-4">
           <p className="text-base font-semibold text-[#F5F2EB]">
-            Bu kategoride henüz bağlı çevrimiçi kayıt bulunmadı
+            Bu listede eşleşen çevrimiçi kayıt bulunamadı
           </p>
           <p className="text-sm text-[#9B978E] max-w-2xl leading-relaxed">
             {notice ||
-              'AutoMusic Pro sahte ses bağlantıları oluşturmaz. Ticari veya lisanslı bir müzik katalog sağlayıcısını (örn. Jamendo API) sunucu ortam değişkenlerinden bağlayabilir ya da kendi MP3/AAC/FLAC dosyalarınızı doğrudan bu kategoriye ekleyerek çevrimdışı arşivde dinleyebilirsiniz.'}
+              'Telefonunuzdaki veya cihazınızdaki MP3, AAC, FLAC ya da OGG dosyalarını doğrudan bu kategoriye ekleyerek çevrimdışı arşivde yüksek kalitede dinleyebilirsiniz.'}
           </p>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37] text-[#09090B] text-xs font-semibold"
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold transition-colors"
           >
-            <Upload className="w-4 h-4" />
-            Bu Kategoriye Ses Dosyası Ekle
+            <Upload className="w-4 h-4 shrink-0" />
+            Telefondan Ses Dosyası Yükle
           </button>
         </div>
       ) : (

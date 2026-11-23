@@ -1,11 +1,10 @@
 import React from 'react';
-import { ArtworkMotif } from '../types/media';
+import { CategorySymbolId } from '../types/media';
+import { CategorySymbol } from './CategorySymbol';
 
 interface ArtworkCoverProps {
-  motif: ArtworkMotif;
+  motif: CategorySymbolId;
   title?: string;
-  categoryId?: string;
-  imageUrl?: string;
   arabicTitle?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
@@ -14,148 +13,84 @@ interface ArtworkCoverProps {
 const SIZE_CLASSES: Record<NonNullable<ArtworkCoverProps['size']>, string> = {
   xs: 'w-10 h-10 rounded-lg',
   sm: 'w-12 h-12 rounded-xl',
-  md: 'w-16 h-16 rounded-xl',
-  lg: 'w-44 h-44 rounded-2xl',
+  md: 'w-14 h-14 rounded-xl',
+  lg: 'w-40 h-40 rounded-2xl',
   xl: 'w-64 h-64 sm:w-72 sm:h-72 rounded-3xl',
 };
 
-const MOTIF_GRADIENTS: Record<ArtworkMotif, string> = {
-  quran: 'from-[#1D180B] via-[#12110E] to-[#09090B]',
-  anatolia: 'from-[#22170D] via-[#13110E] to-[#0B0A09]',
-  karadeniz: 'from-[#0E1B18] via-[#0F1312] to-[#09090B]',
-  tasavvuf: 'from-[#1C160C] via-[#12100D] to-[#09090B]',
-  arabic: 'from-[#211A0B] via-[#14110C] to-[#09090B]',
-  pop_rock: 'from-[#1A1612] via-[#131316] to-[#09090B]',
-  nostalgia: 'from-[#201910] via-[#141210] to-[#0A0908]',
-  studio: 'from-[#181713] via-[#111114] to-[#09090B]',
+const ICON_SIZES: Record<NonNullable<ArtworkCoverProps['size']>, string> = {
+  xs: 'w-5 h-5',
+  sm: 'w-6 h-6',
+  md: 'w-7 h-7',
+  lg: 'w-16 h-16',
+  xl: 'w-24 h-24',
+};
+
+// Subtle dark obsidian tonal nuances per category while preserving unified black & gold luxury
+const MOTIF_GRADIENTS: Record<CategorySymbolId, string> = {
+  nostalji: 'from-[#221A10] via-[#141210] to-[#0A0908]',
+  karadeniz: 'from-[#0E1D19] via-[#101413] to-[#09090B]',
+  arapca: 'from-[#241B0D] via-[#15120D] to-[#09090B]',
+  azerice: 'from-[#211610] via-[#141110] to-[#09090B]',
+  lazca: 'from-[#101B1B] via-[#101314] to-[#09090B]',
+  turkuler: 'from-[#23180E] via-[#14110E] to-[#09090B]',
+  arabesk: 'from-[#1F1316] via-[#141013] to-[#09090B]',
+  turk_sanat: 'from-[#1E190E] via-[#13120F] to-[#09090B]',
+  turk_pop: 'from-[#1B171D] via-[#131216] to-[#09090B]',
+  turk_rock: 'from-[#201412] via-[#141111] to-[#09090B]',
+  ozgun: 'from-[#1A1812] via-[#121210] to-[#09090B]',
+  ilahi: 'from-[#1A190E] via-[#11120E] to-[#09090B]',
+  ezgi: 'from-[#18171D] via-[#111115] to-[#09090B]',
+  nesid: 'from-[#171B17] via-[#101311] to-[#09090B]',
+  zikirli_ilahiler: 'from-[#20190D] via-[#13110D] to-[#09090B]',
+  tasavvuf: 'from-[#1D170C] via-[#12100C] to-[#09090B]',
+  kuran: 'from-[#221B0A] via-[#13110C] to-[#09090B]',
+  custom: 'from-[#191815] via-[#121215] to-[#09090B]',
 };
 
 export const ArtworkCover: React.FC<ArtworkCoverProps> = ({
   motif,
-  title,
-  categoryId,
-  imageUrl,
   arabicTitle,
   size = 'md',
   className = '',
 }) => {
+  const safeMotif: CategorySymbolId = MOTIF_GRADIENTS[motif] ? motif : 'custom';
   const showDetail = size === 'lg' || size === 'xl';
-  const [imageFailed, setImageFailed] = React.useState(false);
-  React.useEffect(() => setImageFailed(false), [imageUrl]);
-  const coverLabels: Record<string, { symbol: string; caption: string }> = {
-    nostalji: { symbol: '◉', caption: 'ESKİ PLAKLAR' },
-    karadeniz: { symbol: '≈', caption: 'KEMENÇE · HORON' },
-    arapca: { symbol: 'عود', caption: 'ARAP MÜZİĞİ' },
-    azerice: { symbol: '♫', caption: 'AZERBAYCAN · MUĞAM' },
-    lazca: { symbol: '≈', caption: 'LAZCA EZGİLER' },
-    turkuler: { symbol: '♬', caption: 'ANADOLU TÜRKÜLERİ' },
-    arabesk: { symbol: '♥', caption: 'ARABESK' },
-    turk_sanat: { symbol: '♪', caption: 'FASIL · MAKAM' },
-    turk_pop: { symbol: '✦', caption: 'TÜRKÇE POP' },
-    turk_rock: { symbol: '⚡', caption: 'ANADOLU ROCK' },
-    ozgun: { symbol: '✎', caption: 'ÖZGÜN MÜZİK' },
-    ilahi: { symbol: '☪', caption: 'İLAHİ' },
-    ezgi: { symbol: '✧', caption: 'EZGİ' },
-    nesid: { symbol: '♫', caption: 'NEŞİD' },
-    zikirli_ilahiler: { symbol: '☪', caption: 'ZİKİRLİ İLAHİLER' },
-    tasavvuf: { symbol: '✺', caption: 'TASAVVUF · NEY' },
-    kuran: { symbol: '﷽', caption: 'KUR’AN-I KERİM' },
-  };
-  const label = categoryId ? coverLabels[categoryId] : undefined;
 
   return (
     <div
-      className={`relative shrink-0 overflow-hidden bg-gradient-to-br ${MOTIF_GRADIENTS[motif]} border border-white/[0.08] flex items-center justify-center select-none ${SIZE_CLASSES[size]} ${className}`}
+      className={`relative shrink-0 overflow-hidden bg-gradient-to-br ${MOTIF_GRADIENTS[safeMotif]} border border-[#D4AF37]/20 flex flex-col items-center justify-center select-none ${SIZE_CLASSES[size]} ${className}`}
     >
-      {imageUrl && /^https:\/\//i.test(imageUrl) && !imageFailed && (
-        <img src={imageUrl} alt={title ? `${title} albüm kapağı` : 'Albüm kapağı'} loading="lazy"
-          referrerPolicy="no-referrer" onError={() => setImageFailed(true)}
-          className="absolute inset-0 w-full h-full object-cover z-20" />
-      )}
-      {/* Subtle architectural burnished gold geometric SVG motif */}
-      <svg
-        viewBox="0 0 120 120"
-        className="absolute inset-0 w-full h-full opacity-70"
-        aria-hidden="true"
-      >
-        <defs>
-          <radialGradient id={`goldGlow-${motif}`} cx="50%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.24" />
-            <stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <rect width="120" height="120" fill={`url(#goldGlow-${motif})`} />
+      {/* Subtle radial warm gold halo */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background: 'radial-gradient(circle at 50% 35%, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0) 70%)',
+        }}
+      />
 
-        {motif === 'quran' && (
-          <g stroke="#D4AF37" strokeOpacity="0.38" fill="none" strokeWidth="0.9">
-            <rect x="26" y="26" width="68" height="68" />
-            <rect x="26" y="26" width="68" height="68" transform="rotate(45 60 60)" />
-            <circle cx="60" cy="60" r="34" strokeOpacity="0.22" />
-            <circle cx="60" cy="60" r="18" strokeOpacity="0.3" />
-          </g>
-        )}
-
-        {(motif === 'anatolia' || motif === 'nostalgia') && (
-          <g stroke="#D4AF37" strokeOpacity="0.35" fill="none" strokeWidth="0.9">
-            <circle cx="60" cy="60" r="42" />
-            <circle cx="60" cy="60" r="28" strokeDasharray="3 4" />
-            <circle cx="60" cy="60" r="10" fill="#D4AF37" fillOpacity="0.12" />
-            <line x1="18" y1="60" x2="102" y2="60" strokeOpacity="0.18" />
-          </g>
-        )}
-
-        {motif === 'karadeniz' && (
-          <g stroke="#D4AF37" strokeOpacity="0.34" fill="none" strokeWidth="1">
-            <path d="M0 84 Q30 56 60 72 T120 62" />
-            <path d="M0 96 Q36 68 72 82 T120 74" strokeOpacity="0.22" />
-            <path d="M16 48 L48 26 L78 50 L104 32" strokeOpacity="0.28" />
-          </g>
-        )}
-
-        {(motif === 'tasavvuf' || motif === 'arabic') && (
-          <g stroke="#D4AF37" strokeOpacity="0.36" fill="none" strokeWidth="0.9">
-            <circle cx="60" cy="60" r="38" />
-            <ellipse cx="60" cy="60" rx="22" ry="38" />
-            <ellipse cx="60" cy="60" rx="38" ry="22" />
-            <circle cx="60" cy="60" r="6" fill="#D4AF37" fillOpacity="0.25" />
-          </g>
-        )}
-
-        {(motif === 'pop_rock' || motif === 'studio') && (
-          <g stroke="#D4AF37" strokeOpacity="0.38" fill="none" strokeWidth="1.2">
-            <line x1="24" y1="74" x2="24" y2="46" />
-            <line x1="36" y1="84" x2="36" y2="36" />
-            <line x1="48" y1="90" x2="48" y2="30" />
-            <line x1="60" y1="96" x2="60" y2="24" />
-            <line x1="72" y1="88" x2="72" y2="32" />
-            <line x1="84" y1="78" x2="84" y2="42" />
-            <line x1="96" y1="70" x2="96" y2="50" />
-          </g>
-        )}
-      </svg>
-
-      {label && !arabicTitle ? (
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-1.5 gap-1">
-          <span className={`text-[#E5C158] leading-none ${showDetail ? 'text-6xl' : size === 'md' ? 'text-3xl' : 'text-xl'}`}>{label.symbol}</span>
-          <span className={`font-semibold text-[#E8CF78] leading-tight tracking-wide ${showDetail ? 'text-xs' : 'text-[7px]'}`}>{label.caption}</span>
+      {arabicTitle && showDetail ? (
+        <div className="relative z-10 flex flex-col items-center gap-3 px-3">
+          <CategorySymbol symbol={safeMotif} className="w-10 h-10 text-[#D4AF37]/75" />
+          <span
+            className="font-arabic text-4xl text-[#E8CF78] text-center leading-tight"
+            dir="rtl"
+          >
+            {arabicTitle}
+          </span>
         </div>
-      ) : arabicTitle ? (
+      ) : arabicTitle && size === 'md' ? (
         <span
-          className={`relative z-10 font-arabic text-[#E8CF78] drop-shadow-sm text-center px-2 leading-tight ${
-            showDetail ? 'text-4xl' : size === 'md' ? 'text-base' : 'text-xs'
-          }`}
+          className="relative z-10 font-arabic text-base text-[#E8CF78] text-center px-1 leading-tight"
           dir="rtl"
         >
           {arabicTitle}
         </span>
       ) : (
-        <span
-          className={`relative z-10 font-semibold tracking-wider text-[#D4AF37]/80 ${
-            showDetail ? 'text-xs uppercase' : 'text-[10px]'
-          }`}
-        >
-          {showDetail ? 'AutoMusic Pro' : ''}
-        </span>
+        <CategorySymbol
+          symbol={safeMotif}
+          className={`relative z-10 text-[#D4AF37] ${ICON_SIZES[size]}`}
+        />
       )}
     </div>
   );

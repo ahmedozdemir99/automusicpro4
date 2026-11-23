@@ -127,26 +127,26 @@ export const NowPlayingView: React.FC = () => {
                   reciterId: currentTrack.reciterId!,
                 })
               }
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#16161B] border border-white/10 text-xs font-medium text-[#E5C158] hover:bg-[#1E1D22] transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#16161B] border border-white/10 text-xs font-medium text-[#E5C158] hover:bg-[#1E1D22] transition-colors whitespace-nowrap"
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5 shrink-0" />
               Türkçe Meal
             </button>
           )}
           <button
             type="button"
             onClick={() => navigate({ name: 'audio_settings' })}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#16161B] border border-white/10 text-xs font-medium text-[#F5F2EB] hover:bg-[#1E1D22] transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#16161B] border border-white/10 text-xs font-medium text-[#F5F2EB] hover:bg-[#1E1D22] transition-colors whitespace-nowrap"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
             Ekolayzır
           </button>
           <button
             type="button"
             onClick={() => setCarMode(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#16161B] border border-white/10 text-xs font-medium text-[#F5F2EB] hover:bg-[#1E1D22] transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#16161B] border border-white/10 text-xs font-medium text-[#F5F2EB] hover:bg-[#1E1D22] transition-colors whitespace-nowrap"
           >
-            <Car className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <Car className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
             Araba Modu
           </button>
         </div>
@@ -267,13 +267,13 @@ export const NowPlayingView: React.FC = () => {
           </div>
 
           {/* Secondary Utility Actions */}
-          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-white/[0.06]">
+          <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-white/[0.06]">
             <button
               type="button"
               onClick={() => toggleFavoriteTrack(currentTrack)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-[#F5F2EB] transition-colors"
+              className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
             >
-              <Heart className={`w-4 h-4 ${isFav ? 'text-[#D4AF37] fill-[#D4AF37]' : 'text-[#9B978E]'}`} />
+              <Heart className={`w-4 h-4 shrink-0 ${isFav ? 'text-[#D4AF37] fill-[#D4AF37]' : 'text-[#9B978E]'}`} />
               {isFav ? 'Favorilerimde' : 'Favorilere Ekle'}
             </button>
 
@@ -281,21 +281,21 @@ export const NowPlayingView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => void triggerDownload(currentTrack, true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-[#F5F2EB] transition-colors"
+                className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
               >
                 {dlProgress?.status === 'downloading' ? (
                   <>
-                    <Loader2 className="w-4 h-4 text-[#D4AF37] animate-spin" />
+                    <Loader2 className="w-4 h-4 text-[#D4AF37] animate-spin shrink-0" />
                     İndiriliyor %{dlProgress.progress}
                   </>
                 ) : isDownloaded ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0" />
                     Uygulama Arşivinde Kayıtlı
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4 text-[#D4AF37]" />
+                    <Download className="w-4 h-4 text-[#D4AF37] shrink-0" />
                     Çevrimdışı Kaydet
                   </>
                 )}

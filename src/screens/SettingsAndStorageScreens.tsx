@@ -44,22 +44,22 @@ export const DownloadsScreen: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
           <button
             type="button"
             disabled={downloadedItems.length === 0}
             onClick={() => void playQueue(downloadedItems, false)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37] disabled:opacity-40 text-[#09090B] text-xs font-semibold whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-40 text-[#09090B] text-xs font-semibold transition-colors whitespace-nowrap"
           >
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="w-4 h-4 fill-current shrink-0" />
             Çevrimdışı Oynat
           </button>
           <button
             type="button"
             onClick={() => navigate({ name: 'storage' })}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-white/10 text-xs font-medium text-[#F5F2EB] whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-white/10 text-xs font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
           >
-            <HardDrive className="w-4 h-4 text-[#D4AF37]" />
+            <HardDrive className="w-4 h-4 text-[#D4AF37] shrink-0" />
             Depolama Yönetimi
           </button>
         </div>
@@ -258,7 +258,7 @@ export const StorageManagementScreen: React.FC = () => {
               type="button"
               disabled={downloads.length === 0}
               onClick={() => setConfirmClear(true)}
-              className="px-4 py-2 rounded-xl bg-red-950/40 hover:bg-red-950/70 disabled:opacity-40 border border-red-500/30 text-xs font-medium text-red-200"
+              className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-red-950/40 hover:bg-red-950/70 disabled:opacity-40 border border-red-500/30 text-xs font-medium text-red-200 transition-colors"
             >
               Arşivi Manuel Temizle
             </button>
@@ -270,14 +270,14 @@ export const StorageManagementScreen: React.FC = () => {
                   await clearAllDownloads();
                   setConfirmClear(false);
                 }}
-                className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold"
+                className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition-colors"
               >
                 Evet, Tüm Kayıtları Sil
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmClear(false)}
-                className="px-3 py-2 rounded-xl bg-white/10 text-xs text-[#F5F2EB]"
+                className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-medium text-[#F5F2EB] transition-colors"
               >
                 Vazgeç
               </button>
@@ -506,6 +506,11 @@ export const GeneralSettingsScreen: React.FC = () => {
         </div>
 
         <div className="divide-y divide-white/[0.06] text-sm">
+          <ProviderRow
+            name="AutoMusic Pro Kategori & Liste Veritabanı (SQLite)"
+            detail="17 kategoriye özel hazır Türkçe ve Arapça çalma listeleri"
+            connected={providerStatus.databaseConnected}
+          />
           <ProviderRow
             name="Kur'an-ı Kerim Açık Tilavet ve Diyanet Meali"
             detail="MP3Quran, EveryAyah ve AlQuran Cloud (114 Sure, 6 Kari)"

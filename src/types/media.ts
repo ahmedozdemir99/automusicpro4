@@ -32,15 +32,27 @@ export type AppScreen =
   | { name: 'audio_settings' }
   | { name: 'general_settings' };
 
-export type ArtworkMotif =
-  | 'quran'
-  | 'anatolia'
+export type CategorySymbolId =
+  | 'nostalji'
   | 'karadeniz'
+  | 'arapca'
+  | 'azerice'
+  | 'lazca'
+  | 'turkuler'
+  | 'arabesk'
+  | 'turk_sanat'
+  | 'turk_pop'
+  | 'turk_rock'
+  | 'ozgun'
+  | 'ilahi'
+  | 'ezgi'
+  | 'nesid'
+  | 'zikirli_ilahiler'
   | 'tasavvuf'
-  | 'arabic'
-  | 'pop_rock'
-  | 'nostalgia'
-  | 'studio';
+  | 'kuran'
+  | 'custom';
+
+export type ArtworkMotif = CategorySymbolId;
 
 export interface MusicCategory {
   id: string;
@@ -49,7 +61,7 @@ export interface MusicCategory {
   subtitle: string;
   language: string;
   genre: string;
-  motif: ArtworkMotif;
+  motif: CategorySymbolId;
   accentHex: string;
   archiveQuery: string;
   isQuran?: boolean;
@@ -74,11 +86,22 @@ export interface MediaItem {
   licenseName: string;
   bitrateKbps?: number;
   format: 'MP3' | 'AAC' | 'FLAC' | 'OGG' | 'WAV';
-  motif: ArtworkMotif;
+  motif: CategorySymbolId;
   surahNumber?: number;
   reciterId?: string;
   ayahNumber?: number;
   isLocalFile?: boolean;
+}
+
+export interface CuratedPlaylist {
+  id: string;
+  categoryId: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  motif: CategorySymbolId;
+  tracks: MediaItem[];
+  source: 'database';
 }
 
 export interface ArtistSummary {
@@ -88,7 +111,7 @@ export interface ArtistSummary {
   language: string;
   genre: string;
   trackCount: number;
-  motif: ArtworkMotif;
+  motif: CategorySymbolId;
   isReciter?: boolean;
 }
 
@@ -100,6 +123,7 @@ export interface Reciter {
   country: string;
   bitrateKbps: number;
   surahBaseUrl: string;
+  fallbackBaseUrl?: string;
   everyAyahFolder?: string;
   licenseName: string;
 }
@@ -153,7 +177,7 @@ export interface DownloadRecord {
 export interface DownloadProgress {
   contentId: string;
   title: string;
-  progress: number; // 0..100
+  progress: number;
   status: 'queued' | 'downloading' | 'completed' | 'paused_low_storage' | 'error';
   errorMessage?: string;
 }
@@ -161,9 +185,9 @@ export interface DownloadProgress {
 export interface EqualizerSettings {
   enabled: boolean;
   preset: EqPresetId;
-  bandsDb: [number, number, number, number, number]; // 60Hz, 230Hz, 910Hz, 3.6kHz, 14kHz (-12..+12)
-  bassBoostDb: number; // 0..12
-  trebleBoostDb: number; // -6..+12
+  bandsDb: [number, number, number, number, number];
+  bassBoostDb: number;
+  trebleBoostDb: number;
 }
 
 export interface PlaybackResumePoint {
@@ -173,6 +197,7 @@ export interface PlaybackResumePoint {
 }
 
 export interface CatalogProviderStatus {
+  databaseConnected: boolean;
   quranApiConnected: boolean;
   internetArchiveConnected: boolean;
   jamendoConfigured: boolean;
