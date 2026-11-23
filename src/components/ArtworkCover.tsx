@@ -4,6 +4,8 @@ import { CategorySymbol } from './CategorySymbol';
 
 interface ArtworkCoverProps {
   motif: CategorySymbolId;
+  categoryId?: string;
+  imageUrl?: string;
   title?: string;
   arabicTitle?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -50,12 +52,21 @@ const MOTIF_GRADIENTS: Record<CategorySymbolId, string> = {
 
 export const ArtworkCover: React.FC<ArtworkCoverProps> = ({
   motif,
+  imageUrl,
   arabicTitle,
   size = 'md',
   className = '',
 }) => {
   const safeMotif: CategorySymbolId = MOTIF_GRADIENTS[motif] ? motif : 'custom';
   const showDetail = size === 'lg' || size === 'xl';
+
+  if (imageUrl) {
+    return (
+      <div className={`relative shrink-0 overflow-hidden border border-[#D4AF37]/25 select-none ${SIZE_CLASSES[size]} ${className}`}>
+        <img src={imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+      </div>
+    );
+  }
 
   return (
     <div
