@@ -68,6 +68,7 @@ export interface MediaItem {
   genre: string;
   durationSec: number;
   streamUrl: string;
+  coverUrl?: string;
   sourceProvider: 'mp3quran' | 'everyayah' | 'internet_archive' | 'jamendo' | 'local_file';
   downloadAllowed: boolean;
   licenseName: string;
