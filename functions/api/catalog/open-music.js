@@ -62,23 +62,26 @@ function validCategory(meta,category,lang){
 }
 const safeString=(s,n=160)=>String(s||"").replace(/<[^>]+>/g,"").slice(0,n);
 async function jamendo(env,terms,category,lang,genre,motif,offset){
-  if(!env.JAMENDO_CLIENT_ID)return [];
+  if(!env.JAMENDO_CLIENT_ID)return {tracks:[],diagnostics:{configured:false}};
   const queries=terms;
   const responses=await Promise.allSettled(queries.map(async query=>{
     const u=new URL("https://api.jamendo.com/v3.0/tracks/");
     for(const [k,v] of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"60",offset:String(offset),search:query,audioformat:"mp32",include:"musicinfo+licenses",type:"single albumtrack",imagesize:"300"}))u.searchParams.set(k,v);
     // Jamendo's lang filter refers to lyrics language; use it for Turkish vocal catalog.
     // Do not filter instrumental music by lyrics language; verify origin in metadata below.
-    const res=await fetch(u.toString());if(!res.ok)throw Error("Jamendo "+res.status);
-    const data=await res.json();if(data.headers?.status==="failed")throw Error("Jamendo rejected request");
-    return(data.results||[]).flatMap(item=>{
+    const res=await fetch(u.toString());if(!res.ok)throw Error("Jamendo HTTP "+res.status);
+    const data=await res.json();if(data.headers?.status==="failed")throw Error("Jamendo: "+String(data.headers?.error_message||"request rejected"));
+    const raw=Array.isArray(data.results)?data.results:[];
+    const tracks=raw.flatMap(item=>{
       if(!item.audio?.startsWith("https://"))return[];
       const meta={title:item.name,artist:item.artist_name,album:item.album_name,lang:normalize(item.musicinfo?.lang),tags:[...(item.musicinfo?.tags?.genres||[]),...(item.musicinfo?.tags?.vartags||[])].join(" ")};
       if(!validCategory(meta,category,lang))return[];
       return[{contentId:"jamendo:"+item.id,title:item.name,artistId:"jamendo-artist:"+item.artist_id,artistName:item.artist_name,album:item.album_name||genre,categoryId:category,language:lang,genre,durationSec:Number(item.duration)||0,streamUrl:item.audio,sourceProvider:"jamendo",downloadAllowed:Boolean(item.audiodownload_allowed),licenseName:item.license_ccurl||"Jamendo",bitrateKbps:192,format:"MP3",motif,coverUrl:item.image||item.album_image||undefined}];
     });
+    return {query,rawCount:raw.length,acceptedCount:tracks.length,tracks};
   }));
-  return responses.flatMap(r=>r.status==="fulfilled"?r.value:[]);
+  const successful=responses.filter(r=>r.status==="fulfilled").map(r=>r.value);
+  return {tracks:successful.flatMap(x=>x.tracks),diagnostics:{configured:true,queries:responses.map((r,i)=>r.status==="fulfilled"?{term:queries[i],raw:r.value.rawCount,accepted:r.value.acceptedCount}:{term:queries[i],error:String(r.reason).slice(0,140)})}};
 }
 async function archive(terms,category,lang,genre,motif){
   const searches=terms;
@@ -115,9 +118,9 @@ export async function onRequestGet({request,env}){
   // Rotate independent search terms instead of repeating the same six on every refresh.
   const selected=q?[...terms]:Array.from({length:Math.min(4,terms.length)},(_,i)=>terms[(page*4+i)%terms.length]);
   const [j,a]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif)]);
-  const jamendoTracks=j.status==="fulfilled"?j.value:[];
+  const jamendoTracks=j.status==="fulfilled"?j.value.tracks:[];
   const archiveTracks=a.status==="fulfilled"?a.value:[];
   const merged=[...jamendoTracks,...archiveTracks];
   const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,80);
-  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
+  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,jamendoDetails:j.status==="fulfilled"?j.value.diagnostics:null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
 }
