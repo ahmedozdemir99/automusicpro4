@@ -64,7 +64,7 @@ async function jamendo(env,terms,category,lang,genre,motif,offset){
   const queries=terms.slice(0,3);
   const responses=await Promise.allSettled(queries.map(async query=>{
     const u=new URL("https://api.jamendo.com/v3.0/tracks/");
-    for(const [k,v] of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"60",offset:String(offset),search:query,audioformat:"mp32",include:"musicinfo licenses",type:"single albumtrack"}))u.searchParams.set(k,v);
+    for(const [k,v] of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"60",offset:String(offset),search:query,audioformat:"mp32",include:"musicinfo+licenses"}))u.searchParams.set(k,v);
     // Jamendo's lang filter refers to lyrics language; use it for Turkish vocal catalog.
     if(isTurkish(lang))u.searchParams.set("lang","tr");
     const res=await fetch(u.toString());if(!res.ok)throw Error("Jamendo "+res.status);
@@ -83,7 +83,8 @@ async function archive(terms,category,lang,genre,motif){
   const results=await Promise.allSettled(searches.map(async term=>{
     const u=new URL("https://archive.org/advancedsearch.php");
     // Search metadata; do not trust a broad OR expression as proof of language.
-    u.searchParams.set("q",'mediatype:audio AND licenseurl:* AND ('+term.split(/\s+/).filter(Boolean).map(w=>'"'+w.replace(/[^\p{L}\p{N}-]/gu,"")+'"').filter(w=>w!=='""').join(" AND ")+')');
+    const phrase=term.replace(/[^\p{L}\p{N} -]/gu," ").trim();
+    u.searchParams.set("q",'mediatype:audio AND licenseurl:* AND (title:"'+phrase+'" OR subject:"'+phrase+'" OR description:"'+phrase+'")');
     for(const field of ["identifier","title","creator","licenseurl","subject","language","description"])u.searchParams.append("fl[]",field);
     u.searchParams.set("rows","12");u.searchParams.set("output","json");
     const response=await fetch(u.toString());if(!response.ok)return[];
