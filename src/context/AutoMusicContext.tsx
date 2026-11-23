@@ -618,7 +618,9 @@ export function AutoMusicProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Step 6 & 7: Prefer local offline file whenever available!
-        const offlineBlob = await getOfflineAudioBlob(item.contentId);
+        // Quran playback must start while the tap's user activation is still valid.
+        // IndexedDB can delay the first play() until the browser rejects it.
+        const offlineBlob = item.categoryId === 'kuran' ? null : await getOfflineAudioBlob(item.contentId);
         let srcToPlay = '';
         let playingOffline = false;
 
@@ -648,7 +650,16 @@ export function AutoMusicProvider({ children }: { children: React.ReactNode }) {
           audioEl.addEventListener('loadedmetadata', onLoaded);
         }
 
-        await audioEl.play();
+        try {
+          await audioEl.play();
+        } catch (firstError) {
+          // If the proxy cannot serve a Quran recording, try the original HTTPS stream.
+          if (item.categoryId !== 'kuran' || !item.streamUrl?.startsWith('https://') || srcToPlay === item.streamUrl) throw firstError;
+          audioEl.crossOrigin = null;
+          audioEl.src = item.streamUrl;
+          audioEl.load();
+          await audioEl.play();
+        }
         setIsPlaying(true);
         setIsBuffering(false);
 
