@@ -470,18 +470,32 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
 // Screen 5: Şarkı Listesi (Spotify-style DB Playlists + Filters + Phone Upload)
 // ============================================================
 
+const AlbumCover: React.FC<{imageUrl:string;title:string}> = ({imageUrl,title}) => {
+  const [failed,setFailed]=useState(false);
+  useEffect(()=>setFailed(false),[imageUrl]);
+  return <div className="aspect-square bg-gradient-to-br from-[#352619] via-[#191611] to-[#09090B] flex items-center justify-center relative overflow-hidden">
+    <ArtworkCover motif="nostalji" size="xl" className="!w-full !h-full !rounded-none !border-0" />
+    {!failed && imageUrl && <img src={imageUrl} alt={title+' albüm kapağı'} loading="lazy"
+      className="absolute inset-0 w-full h-full object-cover" onError={()=>setFailed(true)} />}
+    {failed && <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] text-[#D4AF37] bg-black/60 rounded">Temsili kapak</span>}
+  </div>;
+};
+
 const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string }> = ({ categoryId }) => {
   const supported = ['arabesk','turk_pop','nostalji','turkuler','karadeniz'].includes(categoryId);
   const [artists,setArtists] = useState<string[]>([]);
   const [artist,setArtist] = useState('');
   const [albums,setAlbums] = useState<Array<{id:string;title:string;year:string;coverUrl:string;sourceUrl:string}>>([]);
   const [loading,setLoading] = useState(false);
+  const requestRef = useRef(0);
+  const [albumPage,setAlbumPage] = useState(0);
   const [notice,setNotice] = useState('');
   const [videoLink,setVideoLink] = useState('');
   const [videoId,setVideoId] = useState('');
   const [videoError,setVideoError] = useState('');
   useEffect(() => {
-    setArtist('');setAlbums([]);setArtists([]);setVideoId('');setVideoLink('');
+    requestRef.current += 1;
+    setArtist('');setAlbums([]);setArtists([]);setVideoId('');setVideoLink('');setAlbumPage(0);
     if (!supported) return;
     let active=true;
     fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId))
@@ -491,13 +505,15 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string }> = ({ category
     return ()=>{active=false;};
   },[categoryId,supported]);
   const chooseArtist = async (name:string) => {
-    setArtist(name);setAlbums([]);setNotice('');setLoading(true);
+    const requestId = ++requestRef.current;
+    setArtist(name);setAlbums([]);setAlbumPage(0);setNotice('');setLoading(true);
     try {
       const res=await fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId)+'&artist='+encodeURIComponent(name));
       if(!res.ok)throw Error();
-      const data=await res.json();setAlbums(data.albums||[]);setNotice(data.notice||'');
-    }catch{setNotice('Albüm bilgileri şu anda yüklenemedi.');}
-    finally{setLoading(false);}
+      const data=await res.json();if(requestId!==requestRef.current)return;
+      setAlbums(data.albums||[]);setNotice(data.notice||'');
+    }catch{if(requestId===requestRef.current)setNotice('Albüm bilgileri şu anda yüklenemedi.');}
+    finally{if(requestId===requestRef.current)setLoading(false);}
   };
   const playVideo = () => {
     try {
@@ -519,10 +535,12 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string }> = ({ category
         className={`px-3 py-2 rounded-lg text-xs border ${artist===name?'bg-[#D4AF37] text-black border-[#D4AF37]':'border-white/15 text-[#F5F2EB]'}`}>{name}</button>)}</div>
       {loading && <p className="text-xs text-[#D4AF37]">Albümler yükleniyor…</p>}
       {notice && <p className="text-xs text-[#9B978E]">{notice}</p>}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">{albums.map(a=><div key={a.id} className="rounded-xl overflow-hidden border border-white/10">
-        <div className="aspect-square bg-[#201910]"><img src={a.coverUrl} alt={a.title} loading="lazy" className="w-full h-full object-cover" onError={e=>{e.currentTarget.style.display='none';}} /></div>
+      <p className="text-xs text-[#D4AF37]">{artist ? `${albums.length} albüm bulundu` : `${artists.length} sanatçı`}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">{albums.slice(0,(albumPage+1)*20).map(a=><div key={a.id} className="rounded-xl overflow-hidden border border-white/10">
+        <AlbumCover imageUrl={a.coverUrl} title={a.title} />
         <div className="p-2"><p className="text-xs text-[#F5F2EB] line-clamp-2">{a.title}</p><p className="text-[11px] text-[#9B978E]">{a.year||'Yıl bilinmiyor'}</p></div>
       </div>)}</div>
+      {albums.length>(albumPage+1)*20 && <button type="button" onClick={()=>setAlbumPage(p=>p+1)} className="rounded-lg border border-[#D4AF37]/40 px-4 py-2 text-xs text-[#D4AF37]">Daha fazla albüm göster</button>}
     </section>}
     <section className="p-4 rounded-2xl border border-white/10 bg-[#121216] space-y-3">
       <h2 className="text-base font-semibold text-[#F5F2EB]">Uygulama içinde YouTube oynat</h2>
