@@ -89,7 +89,7 @@ export class OpenMusicCatalogRepository implements MediaCatalogRepository {
       genre: category.genre,
       motif: category.motif,
     });
-    const res = await fetch(`/api/catalog/open-music?${params.toString()}`);
+    const res = await fetch(`/api/catalog/open-music?${params.toString()}`, { headers: { Accept: 'application/json' } });
     if (!res.ok) {
       return {
         tracks: [],
@@ -109,6 +109,7 @@ export class OpenMusicCatalogRepository implements MediaCatalogRepository {
       language: category?.language ?? 'Türkçe',
       genre: category?.genre ?? 'Açık Arşiv',
       motif: category?.motif ?? 'studio',
+      searchMode: '1',
     });
     const res = await fetch(`/api/catalog/open-music?${params.toString()}`);
     if (!res.ok) {
