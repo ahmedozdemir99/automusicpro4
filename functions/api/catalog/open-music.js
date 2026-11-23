@@ -22,7 +22,7 @@ const isTurkish=lang=>normalize(lang).includes("turk");
 const foreignLanguages=new Set(["en","fr","es","de","it","ru","pt","ar","fa","az"]);
 const RULES={
   nostalji:{positive:["nostalji","nostalgia","oldies","vintage","78rpm","gramofon","tas plak"],negative:["pop","rock","hiphop","electronic"]},
-  karadeniz:{positive:["karadeniz","black sea","horon","kemence","tulum","trabzon","rize","artvin"],negative:["arabesk","pop","rock"]},
+  karadeniz:{positive:["karadeniz","black sea","horon","kemence","tulum","trabzon","rize","artvin","birol topaloglu","kazim koyuncu","volkan konak"],negative:["arabesk","pop","rock"]},
   turkuler:{positive:["turku","folk","baglama","halk muzigi","asik","anatolian folk"],negative:["pop","rock","arabesk","electronic"]},
   arabesk:{positive:["arabesk","arabesque"],negative:["pop","rock","folk"]},
   turk_sanat:{positive:["turk sanat","turkish classical","ottoman classical","fasil","makam","tanbur","kanun"],negative:["pop","rock","electronic"]},
@@ -48,7 +48,7 @@ function validCategory(meta,category,lang){
   if(isTurkish(lang)){
     if(songLang&&foreignLanguages.has(songLang))return false;
     // No evidence of Turkish origin/lyrics => no claim that the recording is Turkish.
-    const origin= songLang==="tr"||hasAny(text,["turkish","turkce","turkiye","turkey","istanbul","anatolian","anadolu","karadeniz","turku","baglama","osmanli","ottoman","mevlevi"]);
+    const origin= songLang==="tr"||hasAny(text,["turkish","turkce","turkiye","turkey","istanbul","anatolian","anadolu","karadeniz","turku","baglama","osmanli","ottoman","mevlevi","birol topaloglu","kazim koyuncu","volkan konak"]);
     if(!origin)return false;
   }
   if(category==="arapca"&&songLang&&songLang!=="ar"&&!hasAny(text,["arabic","arab"]))return false;
@@ -84,12 +84,12 @@ async function archive(terms,category,lang,genre,motif){
     const u=new URL("https://archive.org/advancedsearch.php");
     // Search metadata; do not trust a broad OR expression as proof of language.
     const phrase=term.replace(/[^\p{L}\p{N} -]/gu," ").trim();
-    u.searchParams.set("q",'mediatype:audio AND licenseurl:* AND (title:"'+phrase+'" OR subject:"'+phrase+'" OR description:"'+phrase+'")');
+    u.searchParams.set("q",'mediatype:audio AND licenseurl:* AND (title:"'+phrase+'" OR subject:"'+phrase+'" OR description:"'+phrase+'" OR creator:"'+phrase+'")');
     for(const field of ["identifier","title","creator","licenseurl","subject","language","description"])u.searchParams.append("fl[]",field);
-    u.searchParams.set("rows","12");u.searchParams.set("output","json");
+    u.searchParams.set("rows","30");u.searchParams.set("output","json");
     const response=await fetch(u.toString());if(!response.ok)return[];
     const data=await response.json();
-    const docs=(data.response?.docs||[]).filter(d=>d.licenseurl).filter(d=>validCategory({title:d.title,artist:d.creator,tags:Array.isArray(d.subject)?d.subject.join(" "):d.subject,lang:Array.isArray(d.language)?d.language[0]:d.language,description:d.description},category,lang)).slice(0,5);
+    const docs=(data.response?.docs||[]).filter(d=>d.licenseurl).filter(d=>validCategory({title:d.title,artist:d.creator,tags:Array.isArray(d.subject)?d.subject.join(" "):d.subject,lang:Array.isArray(d.language)?d.language[0]:d.language,description:d.description},category,lang)).slice(0,10);
     const items=await Promise.allSettled(docs.map(async doc=>{
       const r=await fetch("https://archive.org/metadata/"+encodeURIComponent(doc.identifier)+"/files");if(!r.ok)return[];
       const d=await r.json();return(d.result||[]).filter(f=>/\.(mp3|ogg)$/i.test(f.name||"")&&!/_64kb/i.test(f.name||"")&&!/(_meta|spectrogram|sample|preview)/i.test(f.name||"")).filter(f=>validCategory({title:f.title||doc.title,artist:f.artist||doc.creator,album:f.album||doc.title,tags:Array.isArray(doc.subject)?doc.subject.join(" "):doc.subject,lang:Array.isArray(doc.language)?doc.language[0]:doc.language,description:doc.description},category,lang)).slice(0,4).map(f=>({contentId:"ia:"+doc.identifier+":"+f.name,title:safeString(f.title||f.name),artistId:"ia:"+doc.identifier,artistName:safeString(f.artist||doc.creator||"Internet Archive"),album:safeString(f.album||doc.title),categoryId:category,language:lang,genre,durationSec:Number(f.length)||0,streamUrl:"https://archive.org/download/"+encodeURIComponent(doc.identifier)+"/"+f.name.split("/").map(encodeURIComponent).join("/"),sourceProvider:"internet_archive",downloadAllowed:false,licenseName:safeString(doc.licenseurl,240),format:/\.ogg$/i.test(f.name)?"OGG":"MP3",motif,coverUrl:"https://archive.org/services/img/"+encodeURIComponent(doc.identifier)}));
