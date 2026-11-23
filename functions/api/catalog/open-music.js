@@ -64,7 +64,7 @@ async function jamendo(env,terms,category,lang,genre,motif,offset){
   const queries=terms.slice(0,3);
   const responses=await Promise.allSettled(queries.map(async query=>{
     const u=new URL("https://api.jamendo.com/v3.0/tracks/");
-    for(const [k,v] of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"60",offset:String(offset),search:query,audioformat:"mp32",include:"musicinfo+licenses"}))u.searchParams.set(k,v);
+    for(const [k,v] of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"60",offset:String(offset),search:query,audioformat:"mp32",include:"musicinfo+licenses",type:"single albumtrack",imagesize:"300"}))u.searchParams.set(k,v);
     // Jamendo's lang filter refers to lyrics language; use it for Turkish vocal catalog.
     if(isTurkish(lang))u.searchParams.set("lang","tr");
     const res=await fetch(u.toString());if(!res.ok)throw Error("Jamendo "+res.status);
@@ -107,10 +107,10 @@ export async function onRequestGet({request,env}){
   const q=(url.searchParams.get("q")||"").trim().slice(0,100);
   const offset=Math.min(180,Math.max(0,Number(url.searchParams.get("offset"))||0));
   const def=DEFINITIONS[category];
-  const terms=q && !def ? [q] : def ? def.terms : [];
+  const terms=q && (!def || url.searchParams.get("searchMode")==="1") ? [q] : def ? def.terms : [];
   if(!terms.length)return Response.json({tracks:[],notice:"Arama terimi bulunamadı."});
   const [j,a]=await Promise.allSettled([jamendo(env,terms,category,lang,genre,motif,offset),archive(terms,category,lang,genre,motif)]);
   const merged=[...(j.status==="fulfilled"?j.value:[]),...(a.status==="fulfilled"?a.value:[])];
-  const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).slice(0,80);
+  const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,80);
   return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category},{headers:{"Cache-Control":"public, max-age=300"}});
 }
