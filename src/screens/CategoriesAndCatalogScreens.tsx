@@ -468,6 +468,51 @@ export const ArtistDetailScreen: React.FC<{ artistId: string }> = ({ artistId })
 // ============================================================
 // Screen 5: Şarkı Listesi (Category Track List + Filters + Real Open Catalog + Local Upload)
 // ============================================================
+
+type VerifiedAlbum = { id: string; title: string; year: string; artist: string; coverUrl: string; sourceUrl: string };
+const VerifiedCatalog: React.FC<{ categoryId: string }> = ({ categoryId }) => {
+  const [artists, setArtists] = useState<string[]>([]);
+  const [selected, setSelected] = useState('');
+  const [albums, setAlbums] = useState<VerifiedAlbum[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  useEffect(() => {
+    setSelected(''); setAlbums([]); setArtists([]); setNotice('');
+    if (!['arabesk','turk_pop','nostalji','turkuler','karadeniz'].includes(categoryId)) return;
+    let active = true;
+    fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId))
+      .then(r => r.json()).then(d => { if (active) setArtists(d.artists || []); })
+      .catch(() => { if (active) setNotice('Sanatçı listesi yüklenemedi.'); });
+    return () => { active = false; };
+  }, [categoryId]);
+  const loadArtist = async (name: string) => {
+    setSelected(name); setAlbums([]); setLoading(true); setNotice('');
+    try {
+      const res = await fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId)+'&artist='+encodeURIComponent(name));
+      const data = await res.json();
+      setAlbums(data.albums || []);
+      setNotice(data.notice || '');
+    } catch { setNotice('Albüm bilgileri yüklenemedi.'); }
+    finally { setLoading(false); }
+  };
+  if (!['arabesk','turk_pop','nostalji','turkuler','karadeniz'].includes(categoryId)) return null;
+  return <section className="rounded-2xl border border-[#D4AF37]/20 bg-[#121216] p-4 sm:p-6 space-y-4">
+    <div><h2 className="text-lg font-semibold text-[#F5F2EB]">Doğrulanmış sanatçı ve albüm kataloğu</h2>
+      <p className="text-xs text-[#9B978E] mt-1">MusicBrainz albüm bilgileri · Dinleme hakkı olmayan eserler çalınabilir gösterilmez.</p></div>
+    <div className="flex flex-wrap gap-2">{artists.map(name => <button key={name} type="button" onClick={() => void loadArtist(name)}
+      className={`px-3 py-2 rounded-lg text-xs border ${selected===name?'bg-[#D4AF37] text-[#09090B] border-[#D4AF37]':'text-[#F5F2EB] border-white/15 hover:border-[#D4AF37]'}`}>{name}</button>)}</div>
+    {loading && <p className="text-sm text-[#D4AF37]">Albümler yükleniyor…</p>}
+    {notice && selected && <p className="text-xs text-[#9B978E]">{notice}</p>}
+    {selected && !loading && <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {albums.map(a => <a key={a.id} href={a.sourceUrl} target="_blank" rel="noopener noreferrer" className="min-w-0 rounded-xl border border-white/10 overflow-hidden hover:border-[#D4AF37]/50">
+        <img src={a.coverUrl} alt={a.title+' albüm kapağı'} loading="lazy" className="w-full aspect-square object-cover bg-[#201910]" onError={e=>{e.currentTarget.style.visibility='hidden';}} />
+        <div className="p-2"><p className="text-xs font-medium text-[#F5F2EB] line-clamp-2">{a.title}</p><p className="text-[11px] text-[#9B978E]">{a.year||'Yıl bilinmiyor'} · Albüm bilgisi</p></div>
+      </a>)}
+    </div>}
+    {selected && !loading && albums.length===0 && <p className="text-xs text-[#9B978E]">Bu sanatçı için doğrulanmış albüm sonucu bulunamadı.</p>}
+  </section>;
+};
+
 export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> = ({ categoryId, title }) => {
   const {
     categories,
@@ -603,6 +648,8 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
           </div>
         </div>
       </div>
+
+      {categoryId && <VerifiedCatalog key={categoryId} categoryId={categoryId} />}
 
       {/* Filters Row (Sanatçı, Albüm, Format) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
