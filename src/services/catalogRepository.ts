@@ -135,6 +135,7 @@ export class DatabaseCatalogRepository {
       language: category?.language ?? 'Türkçe',
       genre: category?.genre ?? 'Müzik',
       motif: category?.motif ?? 'turkuler',
+      searchMode: '1',
     });
     const res = await fetch(`/api/catalog/open-music?${params.toString()}`);
     if (!res.ok) {
