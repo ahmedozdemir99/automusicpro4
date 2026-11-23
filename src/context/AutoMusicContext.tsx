@@ -40,7 +40,7 @@ const STORAGE_KEYS = {
   DOWNLOAD_SETTINGS: 'amp_dl_settings_v1',
   EQ_SETTINGS: 'amp_eq_settings_v1',
   SELECTED_RECITER: 'amp_reciter_v1',
-  LOADED_CATALOG: 'amp_catalog_tracks_tr_v3',
+  LOADED_CATALOG: 'amp_catalog_tracks_tr_v4',
 };
 
 const DEFAULT_DOWNLOAD_SETTINGS: DownloadSettings = {
