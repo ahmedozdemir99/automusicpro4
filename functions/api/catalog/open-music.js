@@ -140,6 +140,35 @@ async function openverse(terms,category,lang,genre,motif,env){
   return {tracks:results.flatMap(r=>r.status==="fulfilled"?r.value:[]),diagnostics:{authenticated:Boolean(token),credentialsConfigured:Boolean(env.OPENVERSE_CLIENT_ID&&env.OPENVERSE_CLIENT_SECRET),authError,queries:results.map((r,i)=>r.status==="fulfilled"?{term:terms[i],accepted:r.value.length}:{term:terms[i],error:String(r.reason).slice(0,130)})}};
 }
 
+
+async function wikimedia(terms,category,lang,genre,motif){
+  const batches=await Promise.allSettled(terms.map(async term=>{
+    const u=new URL("https://commons.wikimedia.org/w/api.php");
+    for(const [k,v] of Object.entries({action:"query",generator:"search",gsrsearch:term+" filetype:audio",gsrnamespace:"6",gsrlimit:"20",prop:"imageinfo",iiprop:"url|mime|extmetadata",format:"json",formatversion:"2",origin:"*"}))u.searchParams.set(k,v);
+    const res=await fetch(u.toString(),{headers:{"Accept":"application/json","Api-User-Agent":"AutoMusicPro4/1.0 (licensed audio discovery)"}});
+    if(!res.ok)throw Error("Wikimedia HTTP "+res.status);
+    const data=await res.json();
+    if(data.error)throw Error(String(data.error.info||data.error.code).slice(0,100));
+    const pages=data.query?.pages||[];
+    const tracks=pages.flatMap(p=>{
+      const info=p.imageinfo?.[0];if(!info)return[];
+      const audio=String(info.url||""),mime=String(info.mime||"");
+      if(!/^https:\/\//.test(audio)||!/^audio\//.test(mime)||!(/\.(mp3|ogg|oga|opus)(?:\?|$)/i.test(audio)))return[];
+      const meta=info.extmetadata||{};
+      const license=String(meta.LicenseShortName?.value||"");
+      const licenseUrl=String(meta.LicenseUrl?.value||"");
+      if(!/^(CC BY(?:-SA|-NC|-NC-SA)?(?: |$)|CC0|Public domain|PD-)/i.test(license))return[];
+      const title=String(p.title||"").replace(/^File:/,"").replace(/\.(mp3|ogg|oga|opus)$/i,"").replace(/_/g," ");
+      const artist=String(meta.Artist?.value||"").replace(/<[^>]+>/g," ").trim()||"";
+      const description=String(meta.ImageDescription?.value||"").replace(/<[^>]+>/g," ").trim();
+      if(!artist||!validCategory({title,artist,album:"",tags:"",description,lang:""},category,lang))return[];
+      return [{contentId:"commons:"+p.pageid,title:safeString(title),artistId:"commons:"+normalize(artist),artistName:safeString(artist),album:genre,categoryId:category,language:lang,genre,durationSec:0,streamUrl:audio,sourceProvider:"wikimedia_commons",downloadAllowed:false,licenseName:safeString(licenseUrl||license,240),format:/\.(ogg|oga|opus)$/i.test(audio)?"OGG":"MP3",motif}];
+    });
+    return {raw:pages.length,tracks};
+  }));
+  return {tracks:batches.flatMap(r=>r.status==="fulfilled"?r.value.tracks:[]),diagnostics:{queries:batches.map((r,i)=>r.status==="fulfilled"?{term:terms[i],raw:r.value.raw,accepted:r.value.tracks.length}:{term:terms[i],error:String(r.reason).slice(0,120)})}};
+}
+
 export async function onRequestGet({request,env}){
   const url=new URL(request.url);
   const category=(url.searchParams.get("categoryId")||"turkuler").slice(0,40);
@@ -154,11 +183,12 @@ export async function onRequestGet({request,env}){
   if(!terms.length)return Response.json({tracks:[],notice:"Arama terimi bulunamadı."});
   // Rotate independent search terms instead of repeating the same six on every refresh.
   const selected=q?[...terms]:Array.from({length:Math.min(4,terms.length)},(_,i)=>terms[(page*4+i)%terms.length]);
-  const [j,a,o]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif),openverse(selected,category,lang,genre,motif,env)]);
+  const [j,a,o,w]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif),openverse(selected,category,lang,genre,motif,env),wikimedia(selected,category,lang,genre,motif)]);
   const jamendoTracks=j.status==="fulfilled"?j.value.tracks:[];
   const archiveTracks=a.status==="fulfilled"?a.value:[];
   const openverseTracks=o.status==="fulfilled"?o.value.tracks:[];
-  const merged=[...jamendoTracks,...archiveTracks,...openverseTracks];
+  const wikimediaTracks=w.status==="fulfilled"?w.value.tracks:[];
+  const merged=[...jamendoTracks,...archiveTracks,...openverseTracks,...wikimediaTracks];
   const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,80);
-  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":tracks.some(t=>t.sourceProvider==="openverse")?"openverse":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,openverseCount:openverseTracks.length,openverseDetails:o.status==="fulfilled"?o.value.diagnostics:null,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,jamendoDetails:j.status==="fulfilled"?j.value.diagnostics:null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
+  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":tracks.some(t=>t.sourceProvider==="openverse")?"openverse":tracks.some(t=>t.sourceProvider==="wikimedia_commons")?"wikimedia_commons":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,openverseCount:openverseTracks.length,wikimediaCount:wikimediaTracks.length,wikimediaDetails:w.status==="fulfilled"?w.value.diagnostics:{error:String(w.reason).slice(0,140)},openverseDetails:o.status==="fulfilled"?o.value.diagnostics:null,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,jamendoDetails:j.status==="fulfilled"?j.value.diagnostics:null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
 }
