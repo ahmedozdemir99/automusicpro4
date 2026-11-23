@@ -43,10 +43,17 @@ export class QuranCatalogRepository {
 
   async fetchSurahAyahsWithMeal(surahNumber: number, reciterId: string): Promise<{ ayahs: AyahItem[]; source: string }> {
     const reciter = this.getReciterById(reciterId);
-    const res = await fetch(`/api/quran/surah/${surahNumber}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
-    const contentType = res.headers.get('content-type') || '';
+    // Versioned query bypasses old PWA CacheFirst entries that stored index.html as API data.
+    const apiUrl = `/api/quran/surah/${surahNumber}?v=3`;
+    let res = await fetch(apiUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+    let contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-      throw new Error('Kur’an servisi HTML döndürdü. Cloudflare Pages Functions dağıtımını kontrol edin.');
+      // A stale service worker can intercept the first request. Retry with a unique URL.
+      res = await fetch(`${apiUrl}&retry=${Date.now()}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+      contentType = res.headers.get('content-type') || '';
+    }
+    if (!contentType.includes('application/json')) {
+      throw new Error('Kur’an verisi yerine web sayfası geldi. Uygulamanın önbelleğini yenileyin.');
     }
     const json = (await res.json()) as {
       source?: string;
