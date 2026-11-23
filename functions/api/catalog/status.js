@@ -1,11 +1,15 @@
 export async function onRequestGet({env}) {
-  // SQLite/D1 is not connected until a database binding and DB endpoints are deployed.
+  let databaseConnected=false;
+  if(env.DB){
+    try { await env.DB.prepare("SELECT COUNT(*) AS n FROM catalog_categories").first(); databaseConnected=true; }
+    catch { databaseConnected=false; }
+  }
   return Response.json({
-    databaseConnected: false,
-    quranApiConnected: true,
-    internetArchiveConnected: true,
-    jamendoConfigured: Boolean(env.JAMENDO_CLIENT_ID),
-    localArchiveReady: true,
-    openCatalogAvailable: true,
-  }, {headers: {"Cache-Control":"no-store"}});
+    databaseConnected,
+    quranApiConnected:true,
+    internetArchiveConnected:true,
+    jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),
+    localArchiveReady:true,
+    openCatalogAvailable:true
+  },{headers:{"Cache-Control":"no-store"}});
 }
