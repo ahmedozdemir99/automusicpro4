@@ -21,13 +21,25 @@ export async function onRequestGet({env,params,request}){
   let providerError=null;
   let providerNotice="";
   try{
-    const url=new URL("/api/catalog/open-music",request.url);
-    for(const [key,value] of Object.entries({categoryId,language:category.language,genre:category.genre,motif:category.motif}))url.searchParams.set(key,value);
-    const upstream=await getOpenMusic({request:new Request(url.toString()),env});
-    if(!upstream.ok)throw Error("Catalog returned HTTP "+upstream.status);
-    const data=await upstream.json();
-    discovered=(Array.isArray(data.tracks)?data.tracks:[]).filter(t=>t.categoryId===categoryId&&t.contentId&&t.streamUrl);
-    providerNotice=data.notice||"";
+    const refresh=new URL(request.url).searchParams.get("refresh")==="1";
+    // A refresh searches different term batches, not the same first results repeatedly.
+    const pages=refresh?[0,1,2]:[0];
+    const results=await Promise.allSettled(pages.map(async page=>{
+      const url=new URL("/api/catalog/open-music",request.url);
+      for(const [key,value] of Object.entries({categoryId,language:category.language,genre:category.genre,motif:category.motif,page:String(page)}))url.searchParams.set(key,value);
+      const upstream=await getOpenMusic({request:new Request(url.toString()),env});
+      if(!upstream.ok)throw Error("Catalog returned HTTP "+upstream.status);
+      return upstream.json();
+    }));
+    const successful=results.filter(r=>r.status==="fulfilled").map(r=>r.value);
+    if(!successful.length)throw Error("All catalog searches failed");
+    const unique=new Set();
+    discovered=successful.flatMap(data=>Array.isArray(data.tracks)?data.tracks:[]).filter(t=>{
+      if(t.categoryId!==categoryId||!t.contentId||!t.streamUrl||unique.has(t.contentId))return false;
+      unique.add(t.contentId);return true;
+    });
+    providerNotice=successful.map(d=>d.notice).find(Boolean)||"";
+    if(results.some(r=>r.status==="rejected"))console.warn("Partial catalog search failure",categoryId);
   }catch(e){providerError=String(e?.message||e).slice(0,180);console.error("catalog provider",e);}
   let saved=0;
   let writeError=null;
