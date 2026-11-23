@@ -1,26 +1,48 @@
 import {onRequestGet as getOpenMusic} from "../../../catalog/open-music.js";
 import {defaultCategories} from "../../categories.js";
+
+const json=(data,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"no-store"}});
 export async function onRequestGet({env,params,request}){
- if(!env.DB)return Response.json({error:"D1 DB binding missing"},{status:503});
- const categoryId=String(params.categoryId||"");
- if(!/^[a-zA-Z0-9_-]{1,80}$/.test(categoryId))return Response.json({error:"Invalid category"},{status:400});
- try{
-  const r=await env.DB.prepare("SELECT payload FROM catalog_tracks WHERE category_id=? ORDER BY updated_at DESC LIMIT 250").bind(categoryId).all();
-  const cached=(r.results||[]).map(x=>{try{return JSON.parse(x.payload)}catch{return null}}).filter(Boolean);
-  if(cached.length && new URL(request.url).searchParams.get("refresh")!=="1")
-   return Response.json({playlists:[],tracks:cached,notice:"D1 veritabanında önbelleğe alınmış lisanslı kayıtlar."});
+  const categoryId=String(params.categoryId||"");
+  if(!/^[a-zA-Z0-9_-]{1,80}$/.test(categoryId))return json({error:"Invalid category"},400);
   const category=defaultCategories.find(c=>c.id===categoryId);
-  if(!category || category.isQuran)return Response.json({playlists:[],tracks:cached});
-  const url=new URL("/api/catalog/open-music",request.url);
-  for(const [key,value] of Object.entries({categoryId,language:category.language,genre:category.genre,motif:category.motif}))url.searchParams.set(key,value);
-  const upstream=await getOpenMusic({request:new Request(url.toString()),env});
-  if(!upstream.ok)throw Error("catalog unavailable");
-  const data=await upstream.json();
-  const tracks=(data.tracks||[]).filter(t=>t.categoryId===categoryId&&t.contentId&&t.streamUrl);
-  if(tracks.length){
-   const statements=tracks.map(t=>env.DB.prepare("INSERT INTO catalog_tracks(content_id,category_id,payload,updated_at) VALUES (?,?,?,unixepoch()) ON CONFLICT(content_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at").bind(t.contentId,categoryId,JSON.stringify(t)));
-   for(let i=0;i<statements.length;i+=40)await env.DB.batch(statements.slice(i,i+40));
+  let cached=[];
+  let dbError=null;
+  if(env.DB){
+    try{
+      const r=await env.DB.prepare("SELECT payload FROM catalog_tracks WHERE category_id=? ORDER BY updated_at DESC LIMIT 250").bind(categoryId).all();
+      cached=(r.results||[]).map(x=>{try{return JSON.parse(x.payload)}catch{return null}}).filter(Boolean);
+    }catch(e){dbError=String(e?.message||e).slice(0,180);console.error("catalog D1 read",e);}
+  }else dbError="D1 binding missing";
+  if(cached.length && new URL(request.url).searchParams.get("refresh")!=="1")
+    return json({playlists:[],tracks:cached,source:"d1",notice:"D1 önbelleğinden lisanslı kayıtlar."});
+  if(!category || category.isQuran)return json({playlists:[],tracks:cached,source:"d1",notice:"Bu kategori için açık katalog yok."});
+  let discovered=[];
+  let providerError=null;
+  let providerNotice="";
+  try{
+    const url=new URL("/api/catalog/open-music",request.url);
+    for(const [key,value] of Object.entries({categoryId,language:category.language,genre:category.genre,motif:category.motif}))url.searchParams.set(key,value);
+    const upstream=await getOpenMusic({request:new Request(url.toString()),env});
+    if(!upstream.ok)throw Error("Catalog returned HTTP "+upstream.status);
+    const data=await upstream.json();
+    discovered=(Array.isArray(data.tracks)?data.tracks:[]).filter(t=>t.categoryId===categoryId&&t.contentId&&t.streamUrl);
+    providerNotice=data.notice||"";
+  }catch(e){providerError=String(e?.message||e).slice(0,180);console.error("catalog provider",e);}
+  let saved=0;
+  let writeError=null;
+  if(env.DB && discovered.length){
+    try{
+      const statements=discovered.map(t=>env.DB.prepare("INSERT INTO catalog_tracks(content_id,category_id,payload,updated_at) VALUES (?,?,?,unixepoch()) ON CONFLICT(content_id) DO UPDATE SET payload=excluded.payload,category_id=excluded.category_id,updated_at=excluded.updated_at").bind(t.contentId,categoryId,JSON.stringify(t)));
+      for(let i=0;i<statements.length;i+=20)await env.DB.batch(statements.slice(i,i+20));
+      saved=discovered.length;
+    }catch(e){writeError=String(e?.message||e).slice(0,180);console.error("catalog D1 write",e);}
   }
-  return Response.json({playlists:[],tracks:tracks.length?tracks:cached,notice:data.notice||"Açık lisanslı katalog; doğrulanmış Spotify kayıtları değildir."});
- }catch{return Response.json({playlists:[],tracks:[],notice:"D1 sorgusu veya açık müzik sağlayıcısı başarısız oldu. Listeyi yenileyin."},{status:503})}
+  const ids=new Set();
+  const tracks=[...discovered,...cached].filter(t=>{if(ids.has(t.contentId))return false;ids.add(t.contentId);return true;});
+  return json({
+    playlists:[],tracks,source:discovered.length?"open_catalog":cached.length?"d1":"none",
+    diagnostics:{d1ReadError:dbError,providerError,d1WriteError:writeError,discovered:discovered.length,cached:cached.length,saved},
+    notice:tracks.length?"Açık lisanslı katalog kayıtları listeleniyor.":providerNotice||"Bu kategori için doğrulanmış lisanslı ses kaydı bulunamadı."
+  });
 }
