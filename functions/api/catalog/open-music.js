@@ -54,19 +54,19 @@ function validCategory(meta,category,lang){
   if(category==="arapca"&&songLang&&songLang!=="ar"&&!hasAny(text,["arabic","arab"]))return false;
   if(category==="azerice"&&songLang&&songLang!=="az"&&!hasAny(text,["azer","mugham","mugam"]))return false;
   // Category evidence must describe the recording, not merely the query used to find it.
-  if(!hasAny([title,album,tags,description].join(" "),rule.positive))return false;
+  if(!hasAny([title,artist,album,tags,description].join(" "),rule.positive))return false;
   if(hasAny(tags,rule.negative))return false;
   return true;
 }
 const safeString=(s,n=160)=>String(s||"").replace(/<[^>]+>/g,"").slice(0,n);
 async function jamendo(env,terms,category,lang,genre,motif,offset){
   if(!env.JAMENDO_CLIENT_ID)return [];
-  const queries=terms.slice(0,6);
+  const queries=terms;
   const responses=await Promise.allSettled(queries.map(async query=>{
     const u=new URL("https://api.jamendo.com/v3.0/tracks/");
     for(const [k,v] of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"60",offset:String(offset),search:query,audioformat:"mp32",include:"musicinfo+licenses",type:"single albumtrack",imagesize:"300"}))u.searchParams.set(k,v);
     // Jamendo's lang filter refers to lyrics language; use it for Turkish vocal catalog.
-    if(isTurkish(lang))u.searchParams.set("lang","tr");
+    // Do not filter instrumental music by lyrics language; verify origin in metadata below.
     const res=await fetch(u.toString());if(!res.ok)throw Error("Jamendo "+res.status);
     const data=await res.json();if(data.headers?.status==="failed")throw Error("Jamendo rejected request");
     return(data.results||[]).flatMap(item=>{
@@ -79,7 +79,7 @@ async function jamendo(env,terms,category,lang,genre,motif,offset){
   return responses.flatMap(r=>r.status==="fulfilled"?r.value:[]);
 }
 async function archive(terms,category,lang,genre,motif){
-  const searches=terms.slice(0,6);
+  const searches=terms;
   const results=await Promise.allSettled(searches.map(async term=>{
     const u=new URL("https://archive.org/advancedsearch.php");
     // Search metadata; do not trust a broad OR expression as proof of language.
@@ -106,11 +106,14 @@ export async function onRequestGet({request,env}){
   const motif=(url.searchParams.get("motif")||"anatolia").slice(0,30);
   const q=(url.searchParams.get("q")||"").trim().slice(0,100);
   const offset=Math.min(180,Math.max(0,Number(url.searchParams.get("offset"))||0));
+  const page=Math.min(3,Math.max(0,Math.floor(Number(url.searchParams.get("page"))||0)));
   const def=DEFINITIONS[category];
   const terms=q && (!def || url.searchParams.get("searchMode")==="1") ? [q] : def ? def.terms : [];
   if(!terms.length)return Response.json({tracks:[],notice:"Arama terimi bulunamadı."});
-  const [j,a]=await Promise.allSettled([jamendo(env,terms,category,lang,genre,motif,offset),archive(terms,category,lang,genre,motif)]);
+  // Rotate independent search terms instead of repeating the same six on every refresh.
+  const selected=q?[...terms]:Array.from({length:Math.min(4,terms.length)},(_,i)=>terms[(page*4+i)%terms.length]);
+  const [j,a]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif)]);
   const merged=[...(j.status==="fulfilled"?j.value:[]),...(a.status==="fulfilled"?a.value:[])];
   const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,80);
-  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category},{headers:{"Cache-Control":"public, max-age=300"}});
+  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected},{headers:{"Cache-Control":"public, max-age=300"}});
 }
