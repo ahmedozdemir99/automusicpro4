@@ -89,9 +89,10 @@ export default defineConfig(() => {
             },
             {
               urlPattern: /\/api\/quran\/surah\/\d+$/i,
-              handler: 'CacheFirst',
+              handler: 'NetworkFirst',
               options: {
-                cacheName: 'quran-meal-cache',
+                cacheName: 'quran-meal-cache-v2',
+                networkTimeoutSeconds: 8,
                 expiration: {
                   maxEntries: 114,
                   maxAgeSeconds: 60 * 60 * 24 * 30,
