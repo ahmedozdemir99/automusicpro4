@@ -1,0 +1,17 @@
+export async function onRequestGet({request,env}) {
+const url=new URL(request.url),query=(url.searchParams.get("q")||"").trim().slice(0,140),categoryId=(url.searchParams.get("categoryId")||"turkuler").slice(0,40),language=(url.searchParams.get("language")||"Türkçe").slice(0,40),genre=(url.searchParams.get("genre")||"Müzik").slice(0,40),motif=(url.searchParams.get("motif")||"anatolia").slice(0,24);
+if(!query)return Response.json({tracks:[],provider:"none",notice:"Arama sorgusu belirtilmedi."});
+const tracks=[];let jamendoError=false;
+if(env.JAMENDO_CLIENT_ID){try{
+const u=new URL("https://api.jamendo.com/v3.0/tracks/");for(const [k,v]of Object.entries({client_id:env.JAMENDO_CLIENT_ID,format:"json",limit:"20",search:query,audioformat:"mp32"}))u.searchParams.set(k,v);
+const res=await fetch(u.toString());if(!res.ok)throw Error("Jamendo HTTP "+res.status);const data=await res.json();
+if(data.headers?.status==="failed")throw Error("Jamendo API error");
+for(const item of data.results||[]){if(!item.audio||!item.audio.startsWith("https://"))continue;tracks.push({contentId:"jamendo:"+item.id,title:item.name,artistId:"jamendo-artist:"+item.artist_id,artistName:item.artist_name,album:item.album_name||genre,categoryId,language,genre,durationSec:Number(item.duration)||0,streamUrl:item.audio,sourceProvider:"jamendo",downloadAllowed:Boolean(item.audiodownload_allowed),licenseName:item.license_ccurl?"Creative Commons (Jamendo)":"Jamendo Açık Dinleme",bitrateKbps:192,format:"MP3",motif})}
+}catch{jamendoError=true}}
+if(!tracks.length){try{
+const u=new URL("https://archive.org/advancedsearch.php");u.searchParams.set("q",query+" AND mediatype:audio AND licenseurl:*");u.searchParams.append("fl[]","identifier");u.searchParams.append("fl[]","title");u.searchParams.append("fl[]","creator");u.searchParams.append("fl[]","licenseurl");u.searchParams.set("rows","6");u.searchParams.set("output","json");
+const r=await fetch(u.toString(),{headers:{Accept:"application/json"}});if(r.ok){const data=await r.json();const docs=(data.response?.docs||[]).filter(x=>x.licenseurl).slice(0,4);
+const results=await Promise.allSettled(docs.map(async doc=>{const resp=await fetch("https://archive.org/metadata/"+encodeURIComponent(doc.identifier)+"/files");if(!resp.ok)return [];const m=await resp.json();return(m.result||[]).filter(f=>f.name&&/\.(mp3|ogg)$/i.test(f.name)&&!f.name.includes("_64kb")).slice(0,3).map(f=>({contentId:"ia:"+doc.identifier+":"+f.name,title:f.title||f.name,artistId:"ia:"+doc.identifier,artistName:f.artist||doc.creator||"Internet Archive",album:f.album||doc.title||"",categoryId,language,genre,durationSec:Number(f.length)||0,streamUrl:"https://archive.org/download/"+encodeURIComponent(doc.identifier)+"/"+f.name.split("/").map(encodeURIComponent).join("/"),sourceProvider:"internet_archive",downloadAllowed:true,licenseName:"Internet Archive · "+doc.licenseurl,format:"MP3",motif}))}));for(const result of results)if(result.status==="fulfilled")tracks.push(...result.value)}
+}catch{}}
+return Response.json({tracks,provider:tracks[0]?.sourceProvider||"empty",notice:tracks.length?undefined:jamendoError?"Jamendo API yanıt vermedi; uygun açık lisanslı kayıt bulunamadı.":"Bu aramada açık lisanslı kayıt bulunamadı."},{headers:{"Cache-Control":"public, max-age=300"}})
+}
