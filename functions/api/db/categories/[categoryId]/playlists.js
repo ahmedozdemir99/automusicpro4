@@ -1,3 +1,4 @@
+import {onRequestGet as getOpenMusic} from "../../../catalog/open-music.js";
 import {defaultCategories} from "../../categories.js";
 export async function onRequestGet({env,params,request}){
  if(!env.DB)return Response.json({error:"D1 DB binding missing"},{status:503});
@@ -12,7 +13,7 @@ export async function onRequestGet({env,params,request}){
   if(!category || category.isQuran)return Response.json({playlists:[],tracks:cached});
   const url=new URL("/api/catalog/open-music",request.url);
   for(const [key,value] of Object.entries({categoryId,language:category.language,genre:category.genre,motif:category.motif}))url.searchParams.set(key,value);
-  const upstream=await env.ASSETS?.fetch ? await env.ASSETS.fetch(new Request(url.toString())) : await fetch(url.toString());
+  const upstream=await getOpenMusic({request:new Request(url.toString()),env});
   if(!upstream.ok)throw Error("catalog unavailable");
   const data=await upstream.json();
   const tracks=(data.tracks||[]).filter(t=>t.categoryId===categoryId&&t.contentId&&t.streamUrl);
