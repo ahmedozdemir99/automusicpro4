@@ -1,0 +1,1 @@
+export async function onRequestGet({env}) {return Response.json({quranApiConnected:true,internetArchiveConnected:true,jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),localArchiveReady:true},{headers:{"Cache-Control":"no-store"}})}
