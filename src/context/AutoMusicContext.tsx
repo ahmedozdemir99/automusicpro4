@@ -750,18 +750,27 @@ export function AutoMusicProvider({ children }: { children: React.ReactNode }) {
           await tryPlaySource(blobUrl);
         } else if (item.streamUrl) {
           setIsPlayingOfflineFile(false);
-          try {
-            await tryPlaySource(getProxiedAudioUrl(item.streamUrl));
-          } catch (primaryErr) {
+          const fallbackUrl = getFallbackStreamUrl(item);
+          const isQuran = item.categoryId === 'kuran' || item.sourceProvider === 'mp3quran';
+          const sources = [
+            getProxiedAudioUrl(item.streamUrl),
+            ...(isQuran ? [item.streamUrl] : []),
+            ...(fallbackUrl ? [getProxiedAudioUrl(fallbackUrl), fallbackUrl] : []),
+          ];
+          let lastError: unknown;
+          let succeeded = false;
+          for (const source of [...new Set(sources)]) {
             if (seq !== playRequestSeqRef.current) return;
-            if (primaryErr instanceof Error && primaryErr.name === 'AbortError') return;
-            const fallbackUrl = getFallbackStreamUrl(item);
-            if (fallbackUrl) {
-              await tryPlaySource(getProxiedAudioUrl(fallbackUrl));
-            } else {
-              throw primaryErr;
+            try {
+              await tryPlaySource(source);
+              succeeded = true;
+              break;
+            } catch (error) {
+              lastError = error;
+              if (error instanceof Error && (error.name === 'NotAllowedError' || error.name === 'AbortError')) throw error;
             }
           }
+          if (!succeeded) throw lastError ?? new Error('Ses kaynağına ulaşılamadı.');
         } else {
           throw new Error('Bu kayıt için oynatılabilir ses dosyası bulunamadı.');
         }
