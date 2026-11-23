@@ -103,6 +103,31 @@ async function archive(terms,category,lang,genre,motif){
   }));
   return results.flatMap(r=>r.status==="fulfilled"?r.value:[]);
 }
+
+async function openverse(terms,category,lang,genre,motif){
+  const results=await Promise.allSettled(terms.map(async term=>{
+    const url=new URL("https://api.openverse.org/v1/audio/");
+    url.searchParams.set("q",term);
+    url.searchParams.set("category","music");
+    url.searchParams.set("page_size","30");
+    const response=await fetch(url.toString(),{headers:{"Accept":"application/json"}});
+    if(!response.ok)throw Error("Openverse HTTP "+response.status);
+    const data=await response.json();
+    return (data.results||[]).flatMap(item=>{
+      const license=String(item.license||"").toLowerCase();
+      const audio=String(item.url||"");
+      const artist=String(item.creator||"");
+      const title=String(item.title||"");
+      if(!["by","by-sa","by-nc","by-nc-sa","cc0","pdm"].includes(license))return[];
+      if(!/^https:\/\//i.test(audio)||!/^audio\//i.test(String(item.filetype||"audio/unknown"))&& !/\.(mp3|ogg|oga|opus|wav|flac)(?:\?|$)/i.test(audio))return[];
+      if(!validCategory({title,artist,album:"",tags:String(item.tags?.map(t=>t.name||t).join(" ")||""),description:String(item.description||""),lang:""},category,lang))return[];
+      const id=String(item.id||"");if(!id)return[];
+      return [{contentId:"openverse:"+id,title:safeString(title),artistId:"openverse:"+normalize(artist),artistName:safeString(artist),album:genre,categoryId:category,language:lang,genre,durationSec:Number(item.duration)||0,streamUrl:audio,sourceProvider:"openverse",downloadAllowed:false,licenseName:safeString(item.license_url||license,240),format:/\.ogg|\.oga|\.opus/i.test(audio)?"OGG":"MP3",motif,coverUrl:item.thumbnail||undefined}];
+    });
+  }));
+  return {tracks:results.flatMap(r=>r.status==="fulfilled"?r.value:[]),diagnostics:{queries:results.map((r,i)=>r.status==="fulfilled"?{term:terms[i],accepted:r.value.length}:{term:terms[i],error:String(r.reason).slice(0,130)})}};
+}
+
 export async function onRequestGet({request,env}){
   const url=new URL(request.url);
   const category=(url.searchParams.get("categoryId")||"turkuler").slice(0,40);
@@ -117,10 +142,11 @@ export async function onRequestGet({request,env}){
   if(!terms.length)return Response.json({tracks:[],notice:"Arama terimi bulunamadı."});
   // Rotate independent search terms instead of repeating the same six on every refresh.
   const selected=q?[...terms]:Array.from({length:Math.min(4,terms.length)},(_,i)=>terms[(page*4+i)%terms.length]);
-  const [j,a]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif)]);
+  const [j,a,o]=await Promise.allSettled([jamendo(env,selected,category,lang,genre,motif,offset),archive(selected,category,lang,genre,motif),openverse(selected,category,lang,genre,motif)]);
   const jamendoTracks=j.status==="fulfilled"?j.value.tracks:[];
   const archiveTracks=a.status==="fulfilled"?a.value:[];
-  const merged=[...jamendoTracks,...archiveTracks];
+  const openverseTracks=o.status==="fulfilled"?o.value.tracks:[];
+  const merged=[...jamendoTracks,...archiveTracks,...openverseTracks];
   const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,80);
-  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,jamendoDetails:j.status==="fulfilled"?j.value.diagnostics:null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
+  return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":tracks.some(t=>t.sourceProvider==="openverse")?"openverse":"internet_archive"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,openverseCount:openverseTracks.length,openverseDetails:o.status==="fulfilled"?o.value.diagnostics:null,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,jamendoDetails:j.status==="fulfilled"?j.value.diagnostics:null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
 }
