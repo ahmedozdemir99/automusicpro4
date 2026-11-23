@@ -40,7 +40,7 @@ const STORAGE_KEYS = {
   DOWNLOAD_SETTINGS: 'amp_dl_settings_v1',
   EQ_SETTINGS: 'amp_eq_settings_v1',
   SELECTED_RECITER: 'amp_reciter_v1',
-  LOADED_CATALOG: 'amp_catalog_tracks_tr_v2',
+  LOADED_CATALOG: 'amp_catalog_tracks_tr_v3',
 };
 
 const DEFAULT_DOWNLOAD_SETTINGS: DownloadSettings = {
@@ -201,7 +201,10 @@ export function AutoMusicProvider({ children }: { children: React.ReactNode }) {
   // Categories & Catalog
   const [categories, setCategories] = useState<MusicCategory[]>(() => {
     const saved = readJson<MusicCategory[]>(STORAGE_KEYS.CATEGORIES, []);
-    if (saved.length >= 17) return saved;
+    if (saved.length >= 17) {
+      const custom = saved.filter((c) => c.isCustom);
+      return [...DEFAULT_CATEGORIES, ...custom];
+    }
     return DEFAULT_CATEGORIES;
   });
   const [providerStatus, setProviderStatus] = useState<CatalogProviderStatus>({
