@@ -30,8 +30,7 @@ export type AppScreen =
   | { name: 'downloads' }
   | { name: 'storage' }
   | { name: 'audio_settings' }
-  | { name: 'general_settings' }
-  | { name: 'android_export' };
+  | { name: 'general_settings' };
 
 export type ArtworkMotif =
   | 'quran'

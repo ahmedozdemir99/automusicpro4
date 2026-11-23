@@ -3,7 +3,6 @@ import {
   Car,
   CheckCircle2,
   ChevronLeft,
-  Code2,
   Download,
   HardDrive,
   Headphones,
@@ -12,7 +11,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
-import { ANDROID_PROJECT_FILES, downloadAndroidStudioProjectZip } from '../android/androidProjectFiles';
+import { PWAInstallButton } from '../components/PWAInstallButton';
 import { TrackRow } from '../components/TrackRow';
 import { useAutoMusic } from '../context/AutoMusicContext';
 import { EQ_FREQUENCIES, EQ_PRESETS } from '../services/audioEngine';
@@ -454,7 +453,7 @@ export const GeneralSettingsScreen: React.FC = () => {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#F5F2EB]">Ayarlar</h1>
         <p className="text-sm text-[#9B978E] mt-1">
-          Ses kalitesi, akıllı tek seferlik indirme, depolama, Android Auto ve Android Studio Kotlin projesi
+          Ses kalitesi, akıllı tek seferlik indirme, depolama, Araba Modu ve uygulama kurulumu
         </p>
       </div>
 
@@ -496,17 +495,7 @@ export const GeneralSettingsScreen: React.FC = () => {
           </p>
         </button>
 
-        <button
-          type="button"
-          onClick={() => navigate({ name: 'android_export' })}
-          className="p-5 rounded-2xl bg-[#16140D] hover:bg-[#1F1C12] border border-[#D4AF37]/30 text-left space-y-2 transition-colors"
-        >
-          <Code2 className="w-5 h-5 text-[#D4AF37]" />
-          <p className="text-base font-semibold text-[#F5F2EB]">Android Studio Projesi (Kotlin / Compose)</p>
-          <p className="text-xs text-[#C4B78B]">
-            Aşama 1–8 tüm Kotlin, Media3, Room, DataStore ve Android Auto kaynak kodlarını indir
-          </p>
-        </button>
+        <PWAInstallButton variant="card" />
       </div>
 
       {/* Transparent Catalog Provider Status (Rule 12: No hardcoded API keys, clear status) */}
@@ -543,95 +532,6 @@ export const GeneralSettingsScreen: React.FC = () => {
           DRM korumalı servislerden (Spotify, YouTube vb.) izinsiz indirme veya akış dönüştürme uygulanmaz. API anahtarları kaynak koda sabit yazılmaz.
         </p>
       </section>
-    </div>
-  );
-};
-
-// ============================================================
-// Android Studio Full Kotlin Project Inspector & ZIP Downloader (Phases 1–8)
-// ============================================================
-export const AndroidExportScreen: React.FC = () => {
-  const { goBack, showToast } = useAutoMusic();
-  const [selectedFilePath, setSelectedFilePath] = useState(ANDROID_PROJECT_FILES[0].path);
-  const [downloadingZip, setDownloadingZip] = useState(false);
-
-  const selectedFile =
-    ANDROID_PROJECT_FILES.find((f) => f.path === selectedFilePath) ?? ANDROID_PROJECT_FILES[0];
-
-  const handleDownloadZip = async () => {
-    setDownloadingZip(true);
-    try {
-      await downloadAndroidStudioProjectZip();
-      showToast('AutoMusicPro-Android-Kotlin-Compose.zip indirildi.');
-    } finally {
-      setDownloadingZip(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6 pb-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={goBack}
-          className="inline-flex items-center gap-1.5 text-sm text-[#A19E95] hover:text-[#F5F2EB]"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Geri
-        </button>
-
-        <button
-          type="button"
-          disabled={downloadingZip}
-          onClick={() => void handleDownloadZip()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-sm font-semibold whitespace-nowrap"
-        >
-          <Download className="w-4 h-4" />
-          Android Studio Projesini (.zip) İndir
-        </button>
-      </div>
-
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#F5F2EB]">
-          Android Studio Projesi (Kotlin · Jetpack Compose · Media3)
-        </h1>
-        <p className="text-sm text-[#9B978E] mt-1">
-          Aşama 1–8: Gradle yapılandırması, Material 3 arayüz, ExoPlayer + MediaLibraryService (Android Auto), Room, DataStore, Retrofit Kur'an API, Akıllı İndirme ve Ekolayzır.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* File Tree List */}
-        <aside className="lg:col-span-4 bg-[#121216] border border-white/[0.07] rounded-2xl p-2 space-y-1 max-h-[620px] overflow-y-auto">
-          {ANDROID_PROJECT_FILES.map((file) => (
-            <button
-              key={file.path}
-              type="button"
-              onClick={() => setSelectedFilePath(file.path)}
-              className={`w-full text-left p-3 rounded-xl transition-colors ${
-                file.path === selectedFile.path
-                  ? 'bg-[#1D190F] border border-[#D4AF37]/40'
-                  : 'hover:bg-white/[0.04]'
-              }`}
-            >
-              <p className="text-[11px] font-mono text-[#D4AF37]">{file.phase}</p>
-              <p className="text-xs font-mono text-[#F5F2EB] truncate mt-0.5">{file.path}</p>
-              <p className="text-[11px] text-[#8C887F] line-clamp-1 mt-0.5">{file.summary}</p>
-            </button>
-          ))}
-        </aside>
-
-        {/* Source Viewer */}
-        <div className="lg:col-span-8 bg-[#0D0D11] border border-white/[0.08] rounded-2xl overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-white/[0.07] bg-[#131318] flex items-center justify-between gap-2">
-            <span className="text-xs font-mono text-[#E5C158] truncate">{selectedFile.path}</span>
-            <span className="text-[11px] text-[#8C887F] shrink-0">{selectedFile.phase}</span>
-          </div>
-          <pre className="p-4 text-xs font-mono text-[#DFDCD4] overflow-x-auto overflow-y-auto max-h-[560px] leading-relaxed">
-            <code>{selectedFile.content}</code>
-          </pre>
-        </div>
-      </div>
     </div>
   );
 };

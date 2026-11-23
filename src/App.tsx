@@ -2,7 +2,6 @@ import React from 'react';
 import {
   BookOpen,
   Car,
-  Code2,
   Disc3,
   Download,
   Heart,
@@ -15,7 +14,9 @@ import {
 } from 'lucide-react';
 import { AndroidAutoMode } from './components/AndroidAutoMode';
 import { NowPlayingView } from './components/NowPlayingView';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { PlayerBar } from './components/PlayerBar';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import { AutoMusicProvider, useAutoMusic } from './context/AutoMusicContext';
 import {
   ArtistDetailScreen,
@@ -32,7 +33,6 @@ import {
 } from './screens/LibraryAndSearchScreens';
 import { QuranHubScreen, SurahDetailScreen } from './screens/QuranScreens';
 import {
-  AndroidExportScreen,
   AudioSettingsScreen,
   DownloadsScreen,
   GeneralSettingsScreen,
@@ -58,7 +58,6 @@ function getActiveTab(screenName: string): NavTabId {
     case 'general_settings':
     case 'audio_settings':
     case 'storage':
-    case 'android_export':
       return 'settings';
     default:
       return 'home';
@@ -117,8 +116,6 @@ const AppShell: React.FC = () => {
         return <AudioSettingsScreen />;
       case 'general_settings':
         return <GeneralSettingsScreen />;
-      case 'android_export':
-        return <AndroidExportScreen />;
       default:
         return <HomeScreen />;
     }
@@ -131,9 +128,10 @@ const AppShell: React.FC = () => {
         <button
           type="button"
           onClick={() => navigate({ name: 'home' })}
-          className="text-left px-3 mb-7 text-xl font-bold tracking-tight text-[#D4AF37] whitespace-nowrap"
+          className="flex items-center gap-2.5 text-left px-3 mb-7 text-xl font-bold tracking-tight text-[#D4AF37] whitespace-nowrap"
         >
-          AutoMusic Pro
+          <img src="/icon.svg" alt="" className="w-7 h-7 rounded-lg shrink-0" />
+          <span>AutoMusic Pro</span>
         </button>
 
         <nav className="space-y-1" aria-label="Ana gezinme">
@@ -189,46 +187,45 @@ const AppShell: React.FC = () => {
             active={screen.name === 'audio_settings'}
             onClick={() => navigate({ name: 'audio_settings' })}
           />
-          <SidebarLink
-            icon={<Code2 className="w-4 h-4" />}
-            label="Android Studio Projesi"
-            active={screen.name === 'android_export'}
-            onClick={() => navigate({ name: 'android_export' })}
-          />
         </div>
 
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-4 space-y-2.5">
+          <PWAInstallButton variant="sidebar" />
           <button
             type="button"
             onClick={() => setCarMode(true)}
             className="w-full py-3 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C158] text-[#09090B] text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
           >
             <Car className="w-4 h-4" />
-            Android Auto Modu
+            Araba Modu
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
-        {/* Compact Mobile Top Bar (Clean 3-zone header on <lg screens) */}
-        <header className="lg:hidden sticky top-0 z-30 h-14 px-4 bg-[#0B0B0F]/92 backdrop-blur-md border-b border-white/[0.07] flex items-center justify-between gap-4">
+        {/* Compact Mobile Top Bar */}
+        <header className="lg:hidden sticky top-0 z-30 h-14 px-4 bg-[#0B0B0F]/92 backdrop-blur-md border-b border-white/[0.07] flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => navigate({ name: 'home' })}
-            className="text-base font-bold tracking-tight text-[#D4AF37] whitespace-nowrap shrink-0"
+            className="flex items-center gap-2 text-base font-bold tracking-tight text-[#D4AF37] whitespace-nowrap shrink-0"
           >
-            AutoMusic Pro
+            <img src="/icon.svg" alt="" className="w-6 h-6 rounded-md shrink-0" />
+            <span>AutoMusic Pro</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setCarMode(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37] text-[#09090B] text-xs font-semibold whitespace-nowrap shrink-0"
-          >
-            <Car className="w-3.5 h-3.5" />
-            Araba Modu
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <PWAInstallButton variant="compact" />
+            <button
+              type="button"
+              onClick={() => setCarMode(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37] text-[#09090B] text-xs font-semibold whitespace-nowrap shrink-0"
+            >
+              <Car className="w-3.5 h-3.5" />
+              Araba Modu
+            </button>
+          </div>
         </header>
 
         <main
@@ -268,6 +265,9 @@ const AppShell: React.FC = () => {
 
       {/* Android Auto Full-Screen Car Mode */}
       {carMode && <AndroidAutoMode />}
+
+      {/* Offline Connectivity Indicator */}
+      <OfflineIndicator />
 
       {/* Subtle Toast Feedback */}
       {toastMessage && (

@@ -3,7 +3,6 @@ import {
   ArrowRight,
   BookOpen,
   Car,
-  Code2,
   Disc3,
   Download,
   ListMusic,
@@ -12,6 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import { ArtworkCover } from '../components/ArtworkCover';
+import { PWAInstallButton } from '../components/PWAInstallButton';
 import { TrackRow } from '../components/TrackRow';
 import { useAutoMusic } from '../context/AutoMusicContext';
 import { RECITERS, SURAHS, buildSurahMediaItem } from '../data/quranData';
@@ -77,16 +77,9 @@ export const HomeScreen: React.FC = () => {
                 className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-sm font-medium text-[#F5F2EB] transition-colors whitespace-nowrap"
               >
                 <Car className="w-4 h-4 text-[#D4AF37]" />
-                Android Auto Modu
+                Araba Modu
               </button>
-              <button
-                type="button"
-                onClick={() => navigate({ name: 'android_export' })}
-                className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] text-sm font-medium text-[#CFCBC2] transition-colors whitespace-nowrap"
-              >
-                <Code2 className="w-4 h-4 text-[#D4AF37]" />
-                Android Studio Kotlin Projesi
-              </button>
+              <PWAInstallButton variant="primary" />
             </div>
           </div>
 
