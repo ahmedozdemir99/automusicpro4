@@ -483,6 +483,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [filterText, setFilterText] = useState('');
   const [artistFilter, setArtistFilter] = useState('all');
+  const [albumFilter, setAlbumFilter] = useState('all');
   const [formatFilter, setFormatFilter] = useState('all');
 
   const category = categories.find((c) => c.id === categoryId);
@@ -503,10 +504,17 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
     return Array.from(set).sort();
   }, [tracks]);
 
+  const albumOptions = useMemo(() => Array.from(new Set(tracks
+    .filter(t => artistFilter === 'all' || t.artistName === artistFilter)
+    .map(t => t.album).filter(Boolean))).sort(), [tracks, artistFilter]);
+
+  useEffect(() => setAlbumFilter('all'), [artistFilter, categoryId]);
+
   const filteredTracks = useMemo(() => {
     const norm = normalizeSearchText(filterText);
     return tracks.filter((t) => {
       if (artistFilter !== 'all' && t.artistName !== artistFilter) return false;
+      if (albumFilter !== 'all' && t.album !== albumFilter) return false;
       if (formatFilter !== 'all' && t.format !== formatFilter) return false;
       if (!norm) return true;
       return (
@@ -515,7 +523,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         normalizeSearchText(t.album).includes(norm)
       );
     });
-  }, [artistFilter, filterText, formatFilter, tracks]);
+  }, [artistFilter, albumFilter, filterText, formatFilter, tracks]);
 
   return (
     <div className="space-y-6 pb-10">
@@ -543,7 +551,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
 
       {/* Category Header */}
       <div className="p-6 rounded-3xl bg-[#121216] border border-white/[0.07] flex flex-col sm:flex-row items-start sm:items-center gap-6">
-        <ArtworkCover motif={category?.motif ?? 'studio'} size="lg" />
+        <ArtworkCover motif={category?.motif ?? 'studio'} categoryId={categoryId} title={title} size="lg" />
         <div className="space-y-3 flex-1">
           <p className="text-xs text-[#D4AF37]">
             {category ? `${category.language} · ${category.genre}` : 'Müzik Listesi'}
@@ -597,7 +605,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
       </div>
 
       {/* Filters Row (Sanatçı, Albüm, Format) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="relative">
           <Search className="w-4 h-4 text-[#8C887F] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -622,6 +630,15 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
           ))}
         </select>
         <select
+          value={albumFilter}
+          onChange={(e) => setAlbumFilter(e.target.value)}
+          aria-label="Albüme göre filtrele"
+          className="px-3.5 py-2.5 rounded-xl bg-[#121216] border border-white/10 text-sm text-[#F5F2EB] focus:border-[#D4AF37] focus:outline-none"
+        >
+          <option value="all">Tüm Albümler ({albumOptions.length})</option>
+          {albumOptions.map((a) => <option key={a} value={a}>{a}</option>)}
+        </select>
+        <select
           value={formatFilter}
           onChange={(e) => setFormatFilter(e.target.value)}
           aria-label="Ses formatına göre filtrele"
@@ -635,6 +652,14 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         </select>
       </div>
 
+      {filteredTracks.length > 0 && !isLoading && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[#A19E95]">
+          <span className="text-[#D4AF37] font-semibold">{filteredTracks.length} eser</span>
+          <span>· {new Set(filteredTracks.map(t => t.artistId)).size} sanatçı</span>
+          <span>· {new Set(filteredTracks.map(t => t.album)).size} albüm</span>
+          <span>· Lisans bilgileri kaynak kayıtlarından alınır</span>
+        </div>
+      )}
       {/* Track List or Transparent Provider Notice */}
       {isLoading ? (
         <div className="p-12 rounded-2xl bg-[#121216] border border-white/[0.06] flex flex-col items-center justify-center gap-3 text-center">
