@@ -73,7 +73,6 @@ export class AutoMusicAudioEngine {
 
   constructor() {
     this.audioEl = new Audio();
-    this.audioEl.crossOrigin = 'anonymous';
     this.audioEl.preload = 'metadata';
   }
 
@@ -120,6 +119,7 @@ export class AutoMusicAudioEngine {
       this.analyser.smoothingTimeConstant = 0.82;
 
       this.headroom = this.ctx.createGain();
+      this.audioEl.crossOrigin = 'anonymous';
       this.sourceNode = this.ctx.createMediaElementSource(this.audioEl);
       this.sourceNode.connect(this.headroom);
       let chain: AudioNode = this.headroom;
