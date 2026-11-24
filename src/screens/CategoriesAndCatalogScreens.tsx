@@ -481,7 +481,7 @@ const AlbumCover: React.FC<{imageUrl:string;title:string}> = ({imageUrl,title}) 
   </div>;
 };
 
-const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string }> = ({ categoryId }) => {
+const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string; onArtistSelect: (name: string) => void }> = ({ categoryId, onArtistSelect }) => {
   const supported = categoryId !== 'kuran' && categoryId !== 'custom';
   const [artists,setArtists] = useState<string[]>([]);
   const [artist,setArtist] = useState('');
@@ -506,6 +506,7 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string }> = ({ category
   },[categoryId,supported]);
   const chooseArtist = async (name:string) => {
     const requestId = ++requestRef.current;
+    onArtistSelect(name);
     setArtist(name);setAlbums([]);setAlbumPage(0);setNotice('');setLoading(true);
     try {
       const res=await fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId)+'&artist='+encodeURIComponent(name));
@@ -571,6 +572,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [filterText, setFilterText] = useState('');
   const [artistFilter, setArtistFilter] = useState('all');
+  const [selectedCatalogArtist, setSelectedCatalogArtist] = useState('');
   const [formatFilter, setFormatFilter] = useState('all');
   const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null);
 
@@ -583,6 +585,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
   useEffect(() => {
     setActivePlaylistId(null);
     setArtistFilter('all');
+    setSelectedCatalogArtist('');
     setFormatFilter('all');
     setFilterText('');
     if (categoryId && (!curatedPlaylistsByCategory[categoryId] || allTracks.length === 0)) {
@@ -596,13 +599,16 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
 
   const artistOptions = useMemo(() => {
     const set = new Set<string>();
-    sourceTracks.forEach((t) => set.add(t.artistName));
+    sourceTracks.forEach((t) => {
+      if (!selectedCatalogArtist || normalizeSearchText(t.artistName) === normalizeSearchText(selectedCatalogArtist)) set.add(t.artistName);
+    });
     return Array.from(set).sort();
-  }, [sourceTracks]);
+  }, [sourceTracks, selectedCatalogArtist]);
 
   const filteredTracks = useMemo(() => {
     const norm = normalizeSearchText(filterText);
     return sourceTracks.filter((t) => {
+      if (selectedCatalogArtist && normalizeSearchText(t.artistName) !== normalizeSearchText(selectedCatalogArtist)) return false;
       if (artistFilter !== 'all' && t.artistName !== artistFilter) return false;
       if (formatFilter !== 'all' && t.format !== formatFilter) return false;
       if (!norm) return true;
@@ -612,7 +618,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         normalizeSearchText(t.album).includes(norm)
       );
     });
-  }, [artistFilter, filterText, formatFilter, sourceTracks]);
+  }, [artistFilter, filterText, formatFilter, sourceTracks, selectedCatalogArtist]);
 
   return (
     <div className="space-y-6 pb-10">
@@ -693,10 +699,10 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         </div>
       </div>
 
-      {categoryId && categoryId !== 'kuran' && <VerifiedAndEmbeddedCatalog key={categoryId} categoryId={categoryId} />}
+      {categoryId && categoryId !== 'kuran' && <VerifiedAndEmbeddedCatalog key={categoryId} categoryId={categoryId} onArtistSelect={(name) => { setSelectedCatalogArtist(name); setArtistFilter('all'); setActivePlaylistId(null); setFilterText(''); setFormatFilter('all'); }} />}
 
       {/* Spotify-style Curated Database Playlists for this Category */}
-      {curatedPlaylists.length > 0 && (
+      {!selectedCatalogArtist && curatedPlaylists.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-base font-semibold text-[#F5F2EB] inline-flex items-center gap-2">
@@ -766,6 +772,10 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         </section>
       )}
 
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold text-[#F5F2EB]">{selectedCatalogArtist ? `${selectedCatalogArtist} — çalınabilir kayıtlar` : 'Açık lisanslı ve yerel kayıtlar'}</h2>
+        {selectedCatalogArtist && <button type="button" onClick={() => { setSelectedCatalogArtist(''); setArtistFilter('all'); }} className="text-xs text-[#D4AF37]">Tüm mevcut kayıtları göster</button>}
+      </div>
       {/* Filters Row (Sanatçı, Albüm, Format — Uniform h-11 Height) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="relative">
@@ -817,7 +827,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
             Bu listede eşleşen çevrimiçi kayıt bulunamadı
           </p>
           <p className="text-sm text-[#9B978E] max-w-2xl leading-relaxed">
-            {notice ||
+            {selectedCatalogArtist ? `${selectedCatalogArtist} için mevcut katalogda eşleşen çalınabilir kayıt yok. Başka sanatçıların kayıtları gösterilmiyor.` : notice ||
               'Telefonunuzdaki veya cihazınızdaki MP3, AAC, FLAC ya da OGG dosyalarını doğrudan bu kategoriye ekleyerek çevrimdışı arşivde yüksek kalitede dinleyebilirsiniz.'}
           </p>
           <button
