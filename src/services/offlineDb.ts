@@ -31,6 +31,8 @@ export async function hasOfflineAudio(contentId: string): Promise<boolean> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_AUDIO, 'readonly');
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Arşiv işlemi iptal edildi.')); };
     const store = tx.objectStore(STORE_AUDIO);
     const req = store.getKey(contentId);
     req.onsuccess = () => resolve(req.result !== undefined);
@@ -42,6 +44,8 @@ export async function getOfflineAudioBlob(contentId: string): Promise<Blob | nul
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_AUDIO, 'readonly');
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Arşiv işlemi iptal edildi.')); };
     const store = tx.objectStore(STORE_AUDIO);
     const req = store.get(contentId);
     req.onsuccess = () => {
@@ -64,9 +68,12 @@ export async function saveOfflineAudio(item: MediaItem, blob: Blob): Promise<Dow
   };
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_AUDIO, 'readwrite');
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Arşiv işlemi iptal edildi.')); };
     const store = tx.objectStore(STORE_AUDIO);
     const req = store.put(entry);
-    req.onsuccess = () => {
+    tx.oncomplete = () => {
+      db.close();
       resolve({
         contentId: entry.contentId,
         item: entry.item,
@@ -83,6 +90,8 @@ export async function listOfflineRecords(): Promise<DownloadRecord[]> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_AUDIO, 'readonly');
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Arşiv işlemi iptal edildi.')); };
     const store = tx.objectStore(STORE_AUDIO);
     const req = store.getAll();
     req.onsuccess = () => {
@@ -106,9 +115,11 @@ export async function deleteOfflineAudio(contentId: string): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_AUDIO, 'readwrite');
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Arşiv işlemi iptal edildi.')); };
     const store = tx.objectStore(STORE_AUDIO);
     const req = store.delete(contentId);
-    req.onsuccess = () => resolve();
+    tx.oncomplete = () => { db.close(); resolve(); };
     req.onerror = () => reject(req.error);
   });
 }
@@ -117,9 +128,11 @@ export async function clearAllOfflineAudio(): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_AUDIO, 'readwrite');
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Arşiv işlemi iptal edildi.')); };
     const store = tx.objectStore(STORE_AUDIO);
     const req = store.clear();
-    req.onsuccess = () => resolve();
+    tx.oncomplete = () => { db.close(); resolve(); };
     req.onerror = () => reject(req.error);
   });
 }
