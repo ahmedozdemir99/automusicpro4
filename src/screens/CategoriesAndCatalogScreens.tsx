@@ -17,7 +17,7 @@ import { ArtworkCover } from '../components/ArtworkCover';
 import { TrackRow } from '../components/TrackRow';
 import { useAutoMusic } from '../context/AutoMusicContext';
 import { RECITERS, SURAHS, buildSurahMediaItem } from '../data/quranData';
-import { normalizeSearchText } from '../services/catalogRepository';
+import { normalizeSearchText, openMusicRepository } from '../services/catalogRepository';
 import { ArtistSummary, MediaItem } from '../types/media';
 
 // ============================================================
@@ -549,6 +549,9 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
   const [filterText, setFilterText] = useState('');
   const [artistFilter, setArtistFilter] = useState('all');
   const [selectedCatalogArtist, setSelectedCatalogArtist] = useState('');
+  const [artistTracks, setArtistTracks] = useState<MediaItem[]>([]);
+  const [artistSearching, setArtistSearching] = useState(false);
+  const [artistSearchError, setArtistSearchError] = useState(false);
   const [formatFilter, setFormatFilter] = useState('all');
   const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null);
 
@@ -570,8 +573,27 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId]);
 
+  useEffect(() => {
+    let active = true;
+    setArtistTracks([]);
+    setArtistSearchError(false);
+    setArtistSearching(false);
+    if (!selectedCatalogArtist || !category) return;
+    setArtistSearching(true);
+    void openMusicRepository.searchTracks(selectedCatalogArtist, category)
+      .then(({ tracks }) => {
+        if (active) setArtistTracks(tracks.filter(t =>
+          !!t.streamUrl && normalizeSearchText(t.artistName) === normalizeSearchText(selectedCatalogArtist)));
+      })
+      .catch(() => { if (active) setArtistSearchError(true); })
+      .finally(() => { if (active) setArtistSearching(false); });
+    return () => { active = false; };
+  }, [selectedCatalogArtist, category]);
+
   const activeCuratedPlaylist = curatedPlaylists.find((p) => p.id === activePlaylistId) ?? null;
-  const sourceTracks = activeCuratedPlaylist ? activeCuratedPlaylist.tracks : allTracks;
+  const sourceTracks = selectedCatalogArtist
+    ? Array.from(new Map([...allTracks, ...artistTracks].map(t => [t.contentId, t])).values())
+    : activeCuratedPlaylist ? activeCuratedPlaylist.tracks : allTracks;
 
   const artistOptions = useMemo(() => {
     const set = new Set<string>();
@@ -792,7 +814,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
       </div>
 
       {/* Track List or Transparent Upload Fallback */}
-      {isLoading ? (
+      {(isLoading || artistSearching) ? (
         <div className="p-12 rounded-2xl bg-[#121216] border border-white/[0.06] flex flex-col items-center justify-center gap-3 text-center">
           <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
           <p className="text-sm text-[#9B978E]">Veritabanı listeleri ve kayıtlar yükleniyor...</p>
@@ -803,7 +825,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
             Bu listede eşleşen çevrimiçi kayıt bulunamadı
           </p>
           <p className="text-sm text-[#9B978E] max-w-2xl leading-relaxed">
-            {selectedCatalogArtist ? `${selectedCatalogArtist} için mevcut katalogda eşleşen çalınabilir kayıt yok. Başka sanatçıların kayıtları gösterilmiyor.` : notice ||
+            {selectedCatalogArtist ? (artistSearchError ? 'Sanatçı araması tamamlanamadı. Daha sonra tekrar deneyin.' : `${selectedCatalogArtist} için mevcut katalogda eşleşen çalınabilir kayıt yok. Başka sanatçıların kayıtları gösterilmiyor.`) : notice ||
               'Telefonunuzdaki veya cihazınızdaki MP3, AAC, FLAC ya da OGG dosyalarını doğrudan bu kategoriye ekleyerek çevrimdışı arşivde yüksek kalitede dinleyebilirsiniz.'}
           </p>
           <button
