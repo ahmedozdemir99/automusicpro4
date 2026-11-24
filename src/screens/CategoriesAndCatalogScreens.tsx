@@ -481,7 +481,7 @@ const AlbumCover: React.FC<{imageUrl:string;title:string}> = ({imageUrl,title}) 
   </div>;
 };
 
-const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string; onArtistSelect: (name: string) => void }> = ({ categoryId, onArtistSelect }) => {
+const VerifiedArtistCatalog: React.FC<{ categoryId: string; onArtistSelect: (name: string) => void }> = ({ categoryId, onArtistSelect }) => {
   const supported = categoryId !== 'kuran' && categoryId !== 'custom';
   const [artists,setArtists] = useState<string[]>([]);
   const [artist,setArtist] = useState('');
@@ -490,12 +490,9 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string; onArtistSelect:
   const requestRef = useRef(0);
   const [albumPage,setAlbumPage] = useState(0);
   const [notice,setNotice] = useState('');
-  const [videoLink,setVideoLink] = useState('');
-  const [videoId,setVideoId] = useState('');
-  const [videoError,setVideoError] = useState('');
   useEffect(() => {
     requestRef.current += 1;
-    setArtist('');setAlbums([]);setArtists([]);setVideoId('');setVideoLink('');setAlbumPage(0);
+    setArtist('');setAlbums([]);setArtists([]);setAlbumPage(0);
     if (!supported) return;
     let active=true;
     fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId))
@@ -516,25 +513,12 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string; onArtistSelect:
     }catch{if(requestId===requestRef.current)setNotice('Albüm bilgileri şu anda yüklenemedi.');}
     finally{if(requestId===requestRef.current)setLoading(false);}
   };
-  const playVideo = () => {
-    try {
-      const url=new URL(videoLink.trim());
-      const host=url.hostname.toLowerCase();
-      let id='';
-      if(['youtu.be','www.youtu.be'].includes(host))id=url.pathname.split('/')[1]||'';
-      else if(['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com'].includes(host))
-        id=url.pathname==='/watch'?(url.searchParams.get('v')||''):url.pathname.match(/^\/(?:embed|shorts)\/([^/]+)/)?.[1]||'';
-      if(!/^[A-Za-z0-9_-]{11}$/.test(id))throw Error();
-      setVideoId(id);setVideoError('');
-    }catch{setVideoError('Geçerli bir YouTube video bağlantısı girin.');}
-  };
   return <div className="space-y-4">
     {supported && <section className="p-4 rounded-2xl border border-[#D4AF37]/20 bg-[#121216] space-y-3">
       <h2 className="text-base font-semibold text-[#F5F2EB]">Gerçek sanatçılar ve albümleri</h2>
       <p className="text-xs text-[#9B978E]">MusicBrainz albüm verileri; bunlar çalınabilir kayıt değildir.</p>
       <div className="flex flex-wrap gap-2">{artists.map(name=><button type="button" key={name} onClick={()=>void chooseArtist(name)}
         className={`px-3 py-2 rounded-lg text-xs border ${artist===name?'bg-[#D4AF37] text-black border-[#D4AF37]':'border-white/15 text-[#F5F2EB]'}`}>{name}</button>)}</div>
-      {artist && <a href={'https://www.youtube.com/results?search_query='+encodeURIComponent(artist+' resmi müzik klipleri')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-[#D4AF37]/40 px-3 py-2 text-sm text-[#D4AF37]">YouTube’da {artist} kayıtlarını ara</a>}
       {loading && <p className="text-xs text-[#D4AF37]">Albümler yükleniyor…</p>}
       {notice && <p className="text-xs text-[#9B978E]">{notice}</p>}
       <p className="text-xs text-[#D4AF37]">{artist ? `${albums.length} albüm bulundu` : `${artists.length} sanatçı`}</p>
@@ -544,16 +528,7 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string; onArtistSelect:
       </div>)}</div>
       {albums.length>(albumPage+1)*20 && <button type="button" onClick={()=>setAlbumPage(p=>p+1)} className="rounded-lg border border-[#D4AF37]/40 px-4 py-2 text-xs text-[#D4AF37]">Daha fazla albüm göster</button>}
     </section>}
-    <section className="p-4 rounded-2xl border border-white/10 bg-[#121216] space-y-3">
-      <h2 className="text-base font-semibold text-[#F5F2EB]">Uygulama içinde YouTube oynat</h2>
-      <p className="text-xs text-[#9B978E]">Resmî video bağlantısını yapıştırın. Gömülmeye izin verilen videolar burada açılır; oynatıcı görünür kalmalıdır.</p>
-      <form className="flex flex-col sm:flex-row gap-2" onSubmit={e=>{e.preventDefault();playVideo();}}>
-        <input type="url" value={videoLink} onChange={e=>setVideoLink(e.target.value)} aria-label="YouTube video bağlantısı" placeholder="YouTube video bağlantısı" className="flex-1 min-w-0 rounded-lg bg-black/30 border border-white/15 px-3 py-2 text-sm text-white" />
-        <button type="submit" className="rounded-lg bg-[#D4AF37] text-black font-semibold text-sm px-4 py-2">Uygulamada oynat</button>
-      </form>
-      {videoError && <p role="alert" className="text-xs text-amber-400">{videoError}</p>}
-      {videoId && <div className="aspect-video min-h-[200px] w-full bg-black rounded-xl overflow-hidden"><iframe key={videoId} title="YouTube oynatıcı" src={`https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1`} className="w-full h-full border-0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
-    </section>
+
   </div>;
 };
 
@@ -700,7 +675,7 @@ export const TrackListScreen: React.FC<{ categoryId?: string; title: string }> =
         </div>
       </div>
 
-      {categoryId && categoryId !== 'kuran' && <VerifiedAndEmbeddedCatalog key={categoryId} categoryId={categoryId} onArtistSelect={(name) => { setSelectedCatalogArtist(name); setArtistFilter('all'); setActivePlaylistId(null); setFilterText(''); setFormatFilter('all'); }} />}
+      {categoryId && categoryId !== 'kuran' && <VerifiedArtistCatalog key={categoryId} categoryId={categoryId} onArtistSelect={(name) => { setSelectedCatalogArtist(name); setArtistFilter('all'); setActivePlaylistId(null); setFilterText(''); setFormatFilter('all'); }} />}
 
       {/* Spotify-style Curated Database Playlists for this Category */}
       {!selectedCatalogArtist && curatedPlaylists.length > 0 && (
