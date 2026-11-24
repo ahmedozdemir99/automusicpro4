@@ -66,7 +66,9 @@ export class AutoMusicAudioEngine {
   private trebleFilter: BiquadFilterNode | null = null;
   private analyser: AnalyserNode | null = null;
   // Keep native audio output: Android WebView can report playback while a suspended WebAudio graph is silent.
-  private dspSupported = false;
+  private dspSupported = typeof window !== 'undefined' && Boolean(window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+  private requested = false;
+  private headroom: GainNode | null = null;
   private dspConnected = false;
 
   constructor() {
@@ -84,7 +86,7 @@ export class AutoMusicAudioEngine {
   }
 
   private ensureAudioContext(): void {
-    if (this.dspConnected || !this.dspSupported) return;
+    if (this.dspConnected || !this.dspSupported || !this.requested) return;
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) {
@@ -92,7 +94,7 @@ export class AutoMusicAudioEngine {
         return;
       }
       this.ctx = new AudioCtx();
-      this.sourceNode = this.ctx.createMediaElementSource(this.audioEl);
+      
 
       this.bassFilter = this.ctx.createBiquadFilter();
       this.bassFilter.type = 'lowshelf';
@@ -117,7 +119,10 @@ export class AutoMusicAudioEngine {
       this.analyser.fftSize = 64;
       this.analyser.smoothingTimeConstant = 0.82;
 
-      let chain: AudioNode = this.sourceNode;
+      this.headroom = this.ctx.createGain();
+      this.sourceNode = this.ctx.createMediaElementSource(this.audioEl);
+      this.sourceNode.connect(this.headroom);
+      let chain: AudioNode = this.headroom;
       chain.connect(this.bassFilter);
       chain = this.bassFilter;
 
@@ -147,9 +152,12 @@ export class AutoMusicAudioEngine {
   }
 
   applyEqualizer(settings: EqualizerSettings): void {
+    this.requested = settings.enabled;
     if (!this.dspConnected || !this.ctx) return;
     const now = this.ctx.currentTime;
     const active = settings.enabled;
+    const boost = active ? [...settings.bandsDb, settings.bassBoostDb, settings.trebleBoostDb].reduce((sum, db) => sum + Math.max(0, db), 0) : 0;
+    this.headroom?.gain.setTargetAtTime(Math.pow(10, -boost / 20), now, 0.04);
     this.eqFilters.forEach((filter, idx) => {
       const targetGain = active ? settings.bandsDb[idx] ?? 0 : 0;
       filter.gain.setTargetAtTime(targetGain, now, 0.04);
