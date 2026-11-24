@@ -474,10 +474,10 @@ const AlbumCover: React.FC<{imageUrl:string;title:string}> = ({imageUrl,title}) 
   const [failed,setFailed]=useState(false);
   useEffect(()=>setFailed(false),[imageUrl]);
   return <div className="aspect-square bg-gradient-to-br from-[#352619] via-[#191611] to-[#09090B] flex items-center justify-center relative overflow-hidden">
-    <ArtworkCover motif="nostalji" size="xl" className="!w-full !h-full !rounded-none !border-0" />
+    {(failed || !imageUrl) && <ArtworkCover motif="nostalji" size="xl" className="!w-full !h-full !rounded-none !border-0" />}
     {!failed && imageUrl && <img src={imageUrl} alt={title+' albüm kapağı'} loading="lazy"
       className="absolute inset-0 w-full h-full object-cover" onError={()=>setFailed(true)} />}
-    {failed && <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] text-[#D4AF37] bg-black/60 rounded">Temsili kapak</span>}
+    {(failed || !imageUrl) && <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] text-[#D4AF37] bg-black/60 rounded">Temsili kapak</span>}
   </div>;
 };
 
@@ -489,6 +489,23 @@ const VerifiedArtistCatalog: React.FC<{ categoryId: string; onArtistSelect: (nam
   const [loading,setLoading] = useState(false);
   const requestRef = useRef(0);
   const [albumPage,setAlbumPage] = useState(0);
+  const [selectedAlbum,setSelectedAlbum] = useState('');
+  const [albumTracks,setAlbumTracks] = useState<MediaItem[]>([]);
+  const [albumLoading,setAlbumLoading] = useState(false);
+  const [albumError,setAlbumError] = useState(false);
+  const { categories, catalogTracksByCategory, playQueue } = useAutoMusic();
+  const category = categories.find(c => c.id === categoryId);
+  useEffect(() => {
+    let active = true;
+    setAlbumTracks([]); setAlbumError(false); setAlbumLoading(false);
+    if (!selectedAlbum || !artist || !category) return;
+    setAlbumLoading(true);
+    void openMusicRepository.searchTracks(`${artist} ${selectedAlbum}`, category).then(({tracks}) => {
+      if (active) setAlbumTracks(tracks);
+    }).catch(() => { if (active) setAlbumError(true); }).finally(() => { if (active) setAlbumLoading(false); });
+    return () => { active = false; };
+  }, [selectedAlbum, artist, category]);
+  const playableAlbumTracks = Array.from(new Map([...(catalogTracksByCategory[categoryId] ?? []), ...albumTracks].filter(t => !!t.streamUrl && normalizeSearchText(t.artistName) === normalizeSearchText(artist) && normalizeSearchText(t.album || '') === normalizeSearchText(selectedAlbum)).map(t => [t.contentId,t])).values());
   const [notice,setNotice] = useState('');
   useEffect(() => {
     requestRef.current += 1;
@@ -504,7 +521,7 @@ const VerifiedArtistCatalog: React.FC<{ categoryId: string; onArtistSelect: (nam
   const chooseArtist = async (name:string) => {
     const requestId = ++requestRef.current;
     onArtistSelect(name);
-    setArtist(name);setAlbums([]);setAlbumPage(0);setNotice('');setLoading(true);
+    setSelectedAlbum('');setArtist(name);setAlbums([]);setAlbumPage(0);setNotice('');setLoading(true);
     try {
       const res=await fetch('/api/catalog/verified?categoryId='+encodeURIComponent(categoryId)+'&artist='+encodeURIComponent(name));
       if(!res.ok)throw Error();
@@ -522,10 +539,18 @@ const VerifiedArtistCatalog: React.FC<{ categoryId: string; onArtistSelect: (nam
       {loading && <p className="text-xs text-[#D4AF37]">Albümler yükleniyor…</p>}
       {notice && <p className="text-xs text-[#9B978E]">{notice}</p>}
       <p className="text-xs text-[#D4AF37]">{artist ? `${albums.length} albüm bulundu` : `${artists.length} sanatçı`}</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">{albums.slice(0,(albumPage+1)*20).map(a=><div key={a.id} className="rounded-xl overflow-hidden border border-white/10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">{albums.slice(0,(albumPage+1)*20).map(a=><button type="button" key={a.id} onClick={()=>setSelectedAlbum(a.title)} aria-pressed={selectedAlbum===a.title} className={`text-left rounded-xl overflow-hidden border ${selectedAlbum===a.title ? 'border-[#D4AF37]' : 'border-white/10'}`}>
         <AlbumCover imageUrl={a.coverUrl} title={a.title} />
         <div className="p-2"><p className="text-xs text-[#F5F2EB] line-clamp-2">{a.title}</p><p className="text-[11px] text-[#9B978E]">{a.year||'Yıl bilinmiyor'}</p></div>
-      </div>)}</div>
+      </button>)}</div>
+      {selectedAlbum && <div className="space-y-3 border-t border-white/10 pt-4" aria-live="polite">
+        <h3 className="font-semibold text-[#F5F2EB]">{selectedAlbum}</h3>
+        {albumLoading && <p>Ses kayıtları aranıyor…</p>}
+        {albumError && <p>Çevrimiçi arama başarısız oldu.</p>}
+        {!albumLoading && !playableAlbumTracks.length && <p className="text-sm text-[#9B978E]">Bu albüm için mevcut kaynaklarda eşleşen çalınabilir ses kaydı bulunamadı.</p>}
+        {playableAlbumTracks.length > 0 && <div className="flex gap-3"><button type="button" onClick={()=>void playQueue(playableAlbumTracks,false)}>Albümü çal</button><button type="button" onClick={()=>void playQueue(playableAlbumTracks,true)}>Karışık çal</button></div>}
+        {playableAlbumTracks.map((item,index)=><TrackRow key={item.contentId} item={item} index={index} queueContext={playableAlbumTracks}/>)}
+      </div>}
       {albums.length>(albumPage+1)*20 && <button type="button" onClick={()=>setAlbumPage(p=>p+1)} className="rounded-lg border border-[#D4AF37]/40 px-4 py-2 text-xs text-[#D4AF37]">Daha fazla albüm göster</button>}
     </section>}
 
