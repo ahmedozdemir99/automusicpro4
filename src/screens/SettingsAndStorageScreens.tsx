@@ -312,14 +312,14 @@ export const AudioSettingsScreen: React.FC = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#F5F2EB]">Ses Ayarları ve Ekolayzır</h1>
           <p className="text-sm text-[#9B978E] mt-1">
-            Canlı Web Audio DSP motoru · MP3, AAC, FLAC, OGG ve WAV destekli
+            {isEqSupported ? 'Canlı Web Audio DSP motoru' : 'Güvenli doğrudan ses çıkışı · DSP devre dışı'}
           </p>
         </div>
 
         <label className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#141418] border border-white/10 cursor-pointer">
           <input
             type="checkbox"
-            checked={eqSettings.enabled}
+            checked={isEqSupported && eqSettings.enabled}
             disabled={!isEqSupported}
             onChange={(e) => updateEqSettings({ enabled: e.target.checked })}
             className="w-4 h-4 accent-[#D4AF37]"
@@ -330,7 +330,7 @@ export const AudioSettingsScreen: React.FC = () => {
 
       {!isEqSupported && (
         <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-sm text-amber-200">
-          Bu cihazda veya tarayıcıda donanım ses efektleri desteklenmiyor; oynatma güvenli şekilde ham ses çıkışıyla devam eder.
+          Android ve tarayıcı uyumluluğu için DSP şu anda devre dışı. Ses profilleri gerçek ses çıkışına uygulanmıyor.
         </div>
       )}
 
@@ -340,11 +340,12 @@ export const AudioSettingsScreen: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {presetKeys.map((key) => {
             const p = EQ_PRESETS[key];
-            const active = eqSettings.preset === key && eqSettings.enabled;
+            const active = isEqSupported && eqSettings.preset === key && eqSettings.enabled;
             return (
               <button
                 key={key}
                 type="button"
+                disabled={!isEqSupported}
                 onClick={() => applyEqPreset(key)}
                 className={`p-4 rounded-2xl border text-left transition-colors ${
                   active
@@ -441,6 +442,7 @@ export const AudioSettingsScreen: React.FC = () => {
 export const GeneralSettingsScreen: React.FC = () => {
   const {
     providerStatus,
+    isEqSupported,
     downloads,
     storageEstimate,
     eqSettings,
@@ -467,7 +469,7 @@ export const GeneralSettingsScreen: React.FC = () => {
           <SlidersHorizontal className="w-5 h-5 text-[#D4AF37]" />
           <p className="text-base font-semibold text-[#F5F2EB]">Ses Ayarları ve Ekolayzır</p>
           <p className="text-xs text-[#9B978E]">
-            Aktif profil: {EQ_PRESETS[eqSettings.preset].label} · Bas &amp; Tiz · Araba ve Kulaklık profilleri
+            {isEqSupported ? `Aktif profil: ${EQ_PRESETS[eqSettings.preset].label}` : 'DSP devre dışı'} · Bas &amp; Tiz · Araba ve Kulaklık profilleri
           </p>
         </button>
 
@@ -489,9 +491,9 @@ export const GeneralSettingsScreen: React.FC = () => {
           className="p-5 rounded-2xl bg-[#121216] hover:bg-[#19181F] border border-white/[0.07] text-left space-y-2 transition-colors"
         >
           <Car className="w-5 h-5 text-[#D4AF37]" />
-          <p className="text-base font-semibold text-[#F5F2EB]">Android Auto Araba Modunu Aç</p>
+          <p className="text-base font-semibold text-[#F5F2EB]">Araba Modunu Aç</p>
           <p className="text-xs text-[#9B978E]">
-            Sürüş güvenliğine uygun büyük dokunmatik şablon ve direksiyon medya kumandaları
+            Büyük dokunmatik kontroller; yalnızca güvenli şekilde park halindeyken ekrana dokunun.
           </p>
         </button>
 
