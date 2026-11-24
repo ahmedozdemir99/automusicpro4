@@ -534,6 +534,7 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string; onArtistSelect:
       <p className="text-xs text-[#9B978E]">MusicBrainz albüm verileri; bunlar çalınabilir kayıt değildir.</p>
       <div className="flex flex-wrap gap-2">{artists.map(name=><button type="button" key={name} onClick={()=>void chooseArtist(name)}
         className={`px-3 py-2 rounded-lg text-xs border ${artist===name?'bg-[#D4AF37] text-black border-[#D4AF37]':'border-white/15 text-[#F5F2EB]'}`}>{name}</button>)}</div>
+      {artist && <a href={'https://www.youtube.com/results?search_query='+encodeURIComponent(artist+' resmi müzik klipleri')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-[#D4AF37]/40 px-3 py-2 text-sm text-[#D4AF37]">YouTube’da {artist} kayıtlarını ara</a>}
       {loading && <p className="text-xs text-[#D4AF37]">Albümler yükleniyor…</p>}
       {notice && <p className="text-xs text-[#9B978E]">{notice}</p>}
       <p className="text-xs text-[#D4AF37]">{artist ? `${albums.length} albüm bulundu` : `${artists.length} sanatçı`}</p>
@@ -551,7 +552,7 @@ const VerifiedAndEmbeddedCatalog: React.FC<{ categoryId: string; onArtistSelect:
         <button type="submit" className="rounded-lg bg-[#D4AF37] text-black font-semibold text-sm px-4 py-2">Uygulamada oynat</button>
       </form>
       {videoError && <p role="alert" className="text-xs text-amber-400">{videoError}</p>}
-      {videoId && <div className="aspect-video w-full bg-black rounded-xl overflow-hidden"><iframe key={videoId} title="YouTube oynatıcı" src={`https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1`} className="w-full h-full border-0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+      {videoId && <div className="aspect-video min-h-[200px] w-full bg-black rounded-xl overflow-hidden"><iframe key={videoId} title="YouTube oynatıcı" src={`https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1`} className="w-full h-full border-0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
     </section>
   </div>;
 };
