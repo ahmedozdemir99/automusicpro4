@@ -69,7 +69,7 @@ const DEFAULT_DOWNLOAD_SETTINGS: DownloadSettings = {
 };
 
 const DEFAULT_EQ_SETTINGS: EqualizerSettings = {
-  enabled: true,
+  enabled: false,
   preset: 'car',
   bandsDb: [...EQ_PRESETS.car.bandsDb],
   bassBoostDb: EQ_PRESETS.car.bassBoostDb,
@@ -313,7 +313,7 @@ export function AutoMusicProvider({ children }: { children: React.ReactNode }) {
 
   // Equalizer
   const [eqSettings, setEqSettings] = useState<EqualizerSettings>(() =>
-    readJson<EqualizerSettings>(STORAGE_KEYS.EQ_SETTINGS, DEFAULT_EQ_SETTINGS)
+    readJson<EqualizerSettings>(`${STORAGE_KEYS.EQ_SETTINGS}:dsp-v2`, DEFAULT_EQ_SETTINGS)
   );
 
   // Toast
@@ -341,7 +341,7 @@ export function AutoMusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.RECENTLY_PLAYED, JSON.stringify(recentlyPlayed)); }, [recentlyPlayed]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.RESUME_POINTS, JSON.stringify(resumePoints)); }, [resumePoints]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DOWNLOAD_SETTINGS, JSON.stringify(downloadSettings)); }, [downloadSettings]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.EQ_SETTINGS, JSON.stringify(eqSettings)); }, [eqSettings]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.EQ_SETTINGS}:dsp-v2`, JSON.stringify(eqSettings)); }, [eqSettings]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.SELECTED_RECITER, JSON.stringify(selectedReciterId)); }, [selectedReciterId]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.LOADED_CATALOG, JSON.stringify(catalogTracksByCategory)); }, [catalogTracksByCategory]);
 
