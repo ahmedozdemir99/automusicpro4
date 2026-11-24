@@ -91,7 +91,7 @@ async function archive(terms,category,lang,genre,motif){
     const phrase=term.replace(/[^\p{L}\p{N} -]/gu," ").trim();
     u.searchParams.set("q",'mediatype:audio AND licenseurl:* AND (title:"'+phrase+'" OR subject:"'+phrase+'" OR description:"'+phrase+'" OR creator:"'+phrase+'")');
     for(const field of ["identifier","title","creator","licenseurl","subject","language","description"])u.searchParams.append("fl[]",field);
-    u.searchParams.set("rows","30");u.searchParams.set("output","json");
+    u.searchParams.set("rows","50");u.searchParams.set("output","json");
     const response=await fetch(u.toString());if(!response.ok)return[];
     const data=await response.json();
     const docs=(data.response?.docs||[]).filter(d=>d.licenseurl).filter(d=>validCategory({title:d.title,artist:d.creator,tags:Array.isArray(d.subject)?d.subject.join(" "):d.subject,lang:Array.isArray(d.language)?d.language[0]:d.language,description:d.description},category,lang)).slice(0,10);
@@ -119,7 +119,7 @@ async function openverse(terms,category,lang,genre,motif,env){
     const url=new URL("https://api.openverse.org/v1/audio/");
     url.searchParams.set("q",term);
     url.searchParams.set("category","music");
-    url.searchParams.set("page_size",token?"30":"20");
+    url.searchParams.set("page_size",token?"50":"20");
     const headers={"Accept":"application/json"};
     if(token)headers.Authorization="Bearer "+token;
     const response=await fetch(url.toString(),{headers});
@@ -172,7 +172,7 @@ async function wikimedia(terms,category,lang,genre,motif){
 async function audius(env,terms,category,lang,genre,motif){
   const batches=await Promise.allSettled(terms.map(async term=>{
     const u=new URL("https://api.audius.co/v1/tracks/search");
-    u.searchParams.set("query",term);u.searchParams.set("limit","30");
+    u.searchParams.set("query",term);u.searchParams.set("limit","50");
     const headers={Accept:"application/json"};
     if(env.AUDIUS_API_KEY)headers["x-api-key"]=env.AUDIUS_API_KEY;
     const res=await fetch(u,{headers,signal:AbortSignal.timeout(8000)});
@@ -209,6 +209,6 @@ export async function onRequestGet({request,env}){
   const wikimediaTracks=w.status==="fulfilled"?w.value.tracks:[];
   const audiusTracks=au.status==='fulfilled'?au.value.tracks:[];
   const merged=[...jamendoTracks,...archiveTracks,...openverseTracks,...wikimediaTracks,...audiusTracks];
-  const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,80);
+  const seen=new Set(),tracks=merged.filter(t=>{const id=t.contentId;if(seen.has(id))return false;seen.add(id);return true}).sort((a,b)=>a.artistName.localeCompare(b.artistName,"tr")||a.album.localeCompare(b.album,"tr")||a.title.localeCompare(b.title,"tr")).slice(0,150);
   return Response.json({tracks,provider:tracks.length?(tracks.some(t=>t.sourceProvider==="jamendo")?"jamendo":tracks.some(t=>t.sourceProvider==="openverse")?"openverse":tracks.some(t=>t.sourceProvider==="wikimedia_commons")?"wikimedia_commons":tracks.some(t=>t.sourceProvider==="internet_archive")?"internet_archive":"audius"):"empty",notice:tracks.length?undefined:"Bu kategoride dili ve türü doğrulanabilen lisanslı kayıt bulunamadı. Yanlış veya yabancı kayıt gösterilmiyor.",total:tracks.length,categoryId:category,page,searchTerms:selected,diagnostics:{audiusCount:audiusTracks.length,audiusDetails:au.status==='fulfilled'?au.value.diagnostics:null,jamendoConfigured:Boolean(env.JAMENDO_CLIENT_ID),jamendoCount:jamendoTracks.length,archiveCount:archiveTracks.length,openverseCount:openverseTracks.length,wikimediaCount:wikimediaTracks.length,wikimediaDetails:w.status==="fulfilled"?w.value.diagnostics:{error:String(w.reason).slice(0,140)},openverseDetails:o.status==="fulfilled"?o.value.diagnostics:null,jamendoError:j.status==="rejected"?String(j.reason).slice(0,150):null,jamendoDetails:j.status==="fulfilled"?j.value.diagnostics:null,archiveError:a.status==="rejected"?String(a.reason).slice(0,150):null}},{headers:{"Cache-Control":"public, max-age=300"}});
 }
